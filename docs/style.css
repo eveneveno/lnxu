@@ -1,0 +1,55 @@
+/*
+*
+* ==========================================
+* CUSTOM UTIL CLASSES
+* ==========================================
+*
+*/
+
+.caption-1 figcaption {
+    position: absolute;
+    bottom: 0;
+    right: 0;
+  }
+  
+  .caption-2 figcaption {
+    width: 80%;
+    position: absolute;
+    bottom: 1rem;
+    left: 10%;
+    background: rgba(255, 255, 255, 0.6);
+  }
+  
+  .caption-3 figcaption {
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    transform: translateY(-50%);
+  }
+  
+  
+  
+  /*
+  *
+  * ==========================================
+  * FOR DEMO PURPOSES
+  * ==========================================
+  *
+  */
+  
+  body {
+    min-height: 100vh;
+    background: #eeeeee;
+  }
+  
+  .border-md {
+    border-width: 2px !important;
+  }
+  
+  .separator {
+    border-bottom: 1px dashed #aaa;
+  }
+  
+  .text-small {
+    font-size: 0.85rem;
+  }
