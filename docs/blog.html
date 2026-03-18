@@ -1,0 +1,529 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Blog — Linning Xu</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,600;1,300;1,400&family=DM+Sans:wght@300;400;500&family=JetBrains+Mono:wght@300;400&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #080c14;
+      --fg: #d8e4f5;
+      --fg-dim: rgba(216,228,245,0.5);
+      --fg-faint: rgba(216,228,245,0.25);
+      --accent: #7eb8f7;
+    }
+
+    body {
+      background: var(--bg);
+      min-height: 100vh;
+      color: var(--fg);
+      font-family: 'DM Sans', sans-serif;
+      overflow-x: hidden;
+    }
+
+    #starfield {
+      position: fixed; top: 0; left: 0;
+      width: 100vw; height: 100vh;
+      z-index: 0; pointer-events: none;
+    }
+
+    /* ── Nav ── */
+    nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 200;
+      padding: 1.1rem 2rem;
+      display: flex; align-items: center; justify-content: space-between;
+      background: linear-gradient(to bottom, rgba(8,12,20,0.97) 55%, transparent);
+    }
+    .back-btn {
+      color: var(--fg-dim); text-decoration: none;
+      font-size: 0.75rem; font-weight: 300;
+      letter-spacing: 0.14em; text-transform: uppercase;
+      transition: color 0.2s;
+    }
+    .back-btn:hover { color: var(--fg); }
+    .nav-title {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 1rem; font-weight: 300; font-style: italic;
+      color: var(--fg-faint); letter-spacing: 0.04em;
+    }
+    .nav-right {
+      font-size: 0.72rem; font-weight: 300;
+      letter-spacing: 0.1em; text-transform: uppercase;
+      color: var(--fg-faint);
+    }
+
+    /* ── Page header ── */
+    .page-header {
+      position: relative; z-index: 10;
+      text-align: center;
+      padding: 8.5rem 2rem 3.5rem;
+    }
+    .page-header .eyebrow {
+      font-size: 0.68rem; font-weight: 300;
+      letter-spacing: 0.22em; text-transform: uppercase;
+      color: var(--fg-faint); margin-bottom: 1.2rem;
+    }
+    .page-header h1 {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: clamp(2.5rem, 5.5vw, 4rem);
+      font-weight: 300; font-style: italic;
+      color: var(--fg); letter-spacing: -0.01em; line-height: 1;
+      margin-bottom: 0.9rem;
+    }
+    .page-header .sub {
+      font-size: 0.78rem; font-weight: 300;
+      color: var(--fg-faint); letter-spacing: 0.1em;
+    }
+    .header-rule {
+      width: 1px; height: 40px;
+      background: linear-gradient(to bottom, transparent, var(--fg-faint), transparent);
+      margin: 2rem auto 0;
+    }
+
+    /* ── Tag filter ── */
+    .tag-filter {
+      position: relative; z-index: 10;
+      display: flex; flex-wrap: wrap; gap: 0.5rem;
+      justify-content: center;
+      padding: 0 2rem 2.5rem;
+    }
+    .tag-btn {
+      background: none; border: 1px solid rgba(126,184,247,0.2);
+      color: var(--fg-faint); border-radius: 20px;
+      padding: 5px 14px; font-family: 'DM Sans', sans-serif;
+      font-size: 0.7rem; font-weight: 300;
+      letter-spacing: 0.1em; text-transform: uppercase;
+      cursor: pointer; transition: all 0.2s;
+    }
+    .tag-btn:hover, .tag-btn.active {
+      border-color: rgba(126,184,247,0.55);
+      color: var(--accent);
+      background: rgba(126,184,247,0.06);
+    }
+
+    /* ── Post list ── */
+    .post-list {
+      position: relative; z-index: 10;
+      max-width: 760px; margin: 0 auto;
+      padding: 0 2rem 6rem;
+    }
+
+    /* ── Post item ── */
+    .post-item {
+      display: grid;
+      grid-template-columns: 80px 1fr;
+      gap: 0 2rem;
+      padding: 2rem 0;
+      border-bottom: 1px solid rgba(216,228,245,0.06);
+      text-decoration: none;
+      cursor: pointer;
+      opacity: 0; transform: translateY(14px);
+      transition: opacity 0.5s ease, transform 0.5s ease,
+                  border-color 0.2s;
+    }
+    .post-item.visible {
+      opacity: 1; transform: translateY(0);
+    }
+    .post-item:hover { border-color: rgba(126,184,247,0.15); }
+    .post-item:hover .post-title { color: var(--accent); }
+    .post-item:first-child { border-top: 1px solid rgba(216,228,245,0.06); }
+
+    .post-date {
+      text-align: right;
+      padding-top: 0.2rem;
+    }
+    .post-date .year {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.68rem; font-weight: 300;
+      color: var(--fg-faint); letter-spacing: 0.06em;
+      display: block;
+    }
+    .post-date .dot {
+      display: block; width: 5px; height: 5px;
+      border-radius: 50%; background: var(--accent);
+      opacity: 0.4; margin: 0.5rem 0 0 auto;
+    }
+
+    .post-body {}
+    .post-tags-line {
+      font-size: 0.65rem; font-weight: 300;
+      letter-spacing: 0.14em; text-transform: uppercase;
+      color: var(--accent); opacity: 0.6;
+      margin-bottom: 0.45rem;
+    }
+    .post-title {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 1.35rem; font-weight: 600;
+      line-height: 1.2; letter-spacing: -0.01em;
+      color: var(--fg); margin-bottom: 0.5rem;
+      transition: color 0.2s;
+    }
+    .post-excerpt {
+      font-size: 0.85rem; font-weight: 300;
+      color: var(--fg-dim); line-height: 1.65;
+    }
+    .post-read {
+      display: inline-block; margin-top: 0.7rem;
+      font-size: 0.65rem; font-weight: 300;
+      letter-spacing: 0.14em; text-transform: uppercase;
+      color: var(--fg-faint);
+      transition: color 0.2s;
+    }
+    .post-item:hover .post-read { color: var(--accent); }
+
+    /* ── Post overlay (reading view) ── */
+    .post-overlay {
+      position: fixed; inset: 0; z-index: 500;
+      display: flex; align-items: flex-start; justify-content: center;
+      padding: 2rem;
+      opacity: 0; pointer-events: none;
+      transition: opacity 0.3s;
+      overflow-y: auto;
+    }
+    .post-overlay.open { opacity: 1; pointer-events: all; }
+
+    .post-backdrop {
+      position: fixed; inset: 0;
+      background: rgba(5,8,15,0.88);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+    }
+
+    .post-reader {
+      position: relative; z-index: 1;
+      max-width: 680px; width: 100%;
+      margin: 3rem auto;
+      background: rgba(10,14,22,0.92);
+      border: 1px solid rgba(126,184,247,0.1);
+      border-radius: 3px;
+      padding: 3rem 3rem 3.5rem;
+      transform: translateY(20px);
+      transition: transform 0.4s cubic-bezier(.16,.84,.44,1);
+      box-shadow: 0 24px 80px rgba(0,0,0,0.6);
+    }
+    .post-overlay.open .post-reader { transform: translateY(0); }
+
+    .reader-close {
+      position: absolute; top: 1.2rem; right: 1.5rem;
+      background: none; border: none; cursor: pointer;
+      font-size: 1rem; color: var(--fg-faint);
+      transition: color 0.2s; padding: 4px 8px;
+    }
+    .reader-close:hover { color: var(--fg); }
+
+    .reader-tag {
+      font-size: 0.65rem; letter-spacing: 0.18em; text-transform: uppercase;
+      color: var(--accent); opacity: 0.7;
+      margin-bottom: 0.8rem;
+    }
+    .reader-title {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: clamp(1.6rem, 4vw, 2.4rem);
+      font-weight: 300; font-style: italic;
+      line-height: 1.15; letter-spacing: -0.01em;
+      color: var(--fg); margin-bottom: 0.5rem;
+    }
+    .reader-meta {
+      font-size: 0.72rem; font-weight: 300;
+      color: var(--fg-faint); letter-spacing: 0.08em;
+      margin-bottom: 2.5rem;
+      padding-bottom: 2rem;
+      border-bottom: 1px solid rgba(216,228,245,0.07);
+    }
+    .reader-body {
+      font-size: 0.97rem; font-weight: 300;
+      line-height: 1.9; color: var(--fg-dim);
+    }
+    .reader-body p { margin-bottom: 1.4em; }
+    .reader-body p:last-child { margin-bottom: 0; }
+    .reader-body strong {
+      color: var(--fg); font-weight: 500;
+    }
+    .reader-body em {
+      font-family: 'Cormorant Garamond', serif;
+      font-style: italic; font-size: 1.05em;
+      color: rgba(216,228,245,0.8);
+    }
+    .reader-body code {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.82em;
+      color: var(--accent); opacity: 0.85;
+      background: rgba(126,184,247,0.07);
+      padding: 1px 5px; border-radius: 3px;
+    }
+    .reader-body .pull-quote {
+      border-left: 2px solid rgba(126,184,247,0.35);
+      padding: 0.3rem 0 0.3rem 1.2rem;
+      margin: 1.6rem 0;
+      font-family: 'Cormorant Garamond', serif;
+      font-style: italic; font-size: 1.08rem;
+      color: rgba(216,228,245,0.7);
+    }
+
+    /* ── Footer ── */
+    footer {
+      position: relative; z-index: 10;
+      text-align: center;
+      padding: 1rem 2rem 3rem;
+      font-family: 'Cormorant Garamond', serif;
+      font-style: italic; font-weight: 300;
+      font-size: 0.9rem; color: var(--fg-faint);
+    }
+
+    @media (max-width: 560px) {
+      .post-item { grid-template-columns: 56px 1fr; gap: 0 1rem; }
+      .post-reader { padding: 2rem 1.5rem; margin: 1rem auto; }
+    }
+  </style>
+</head>
+<body>
+  <canvas id="starfield"></canvas>
+
+  <nav>
+    <a href="./index.html" class="back-btn">← back</a>
+    <span class="nav-title">blog</span>
+    <span class="nav-right">thinking out loud</span>
+  </nav>
+
+  <div class="page-header">
+    <p class="eyebrow">Linning Xu · Writing</p>
+    <h1>notes & fragments</h1>
+    <p class="sub">philosophical sketches on technical ideas</p>
+    <div class="header-rule"></div>
+  </div>
+
+  <div class="tag-filter" id="tag-filter">
+    <button class="tag-btn active" data-tag="all">All</button>
+    <button class="tag-btn" data-tag="representation">Representation</button>
+    <button class="tag-btn" data-tag="rendering">Rendering</button>
+    <button class="tag-btn" data-tag="intelligence">Intelligence</button>
+    <button class="tag-btn" data-tag="simulation">Simulation</button>
+    <button class="tag-btn" data-tag="perception">Perception</button>
+  </div>
+
+  <div class="post-list" id="post-list">
+    <!-- posts rendered by JS -->
+  </div>
+
+  <!-- Reading overlay -->
+  <div class="post-overlay" id="post-overlay">
+    <div class="post-backdrop" id="post-backdrop"></div>
+    <div class="post-reader" id="post-reader">
+      <button class="reader-close" id="reader-close">✕</button>
+      <p class="reader-tag" id="reader-tag"></p>
+      <h2 class="reader-title" id="reader-title"></h2>
+      <p class="reader-meta" id="reader-meta"></p>
+      <div class="reader-body" id="reader-body"></div>
+    </div>
+  </div>
+
+  <footer>ideas need time before they become thoughts ✦</footer>
+
+  <script>
+  /* ── Post data ── */
+  const posts = [
+    {
+      date: "2025",
+      tags: ["rendering", "representation"],
+      title: "HDR: Light Has No Ceiling",
+      excerpt: "High dynamic range isn't a technical spec — it's a philosophical statement about what a scene actually is. The world doesn't clip.",
+      body: `<p>Standard displays show you a remapped lie. They take the full dynamic range of a scene — sunlight at 100,000 nits, shadows at near-zero — and compress it into a 0–255 integer. The sun and a candle both become white. The process is called tonemapping, and it's a centuries-old problem: how do you represent infinite light on a finite medium?</p>
+<p>HDR doesn't solve this. It just raises the ceiling. 1,000 nits, 4,000 nits, 10,000 nits. But the insight underneath is more interesting: <strong>a scene has a latent radiance that's independent of any display.</strong> When you capture it, you're capturing a physical truth. The display is always just an approximation.</p>
+<div class="pull-quote">The world doesn't clip. Only our representation of it does.</div>
+<p>Neural radiance fields take this seriously. A NeRF isn't a set of images — it's a function mapping a 3D position and viewing direction to a radiance value. That radiance value is, in principle, unbounded. The implicit representation stores what the scene <em>is</em>, not what any particular camera captured.</p>
+<p>This is why HDR matters for neural rendering. Train on LDR images and you're teaching a model to predict clipped, tonemapped approximations. Train on HDR and you're teaching it physics. The difference shows up in novel view synthesis when you pan toward a light source and ask: what does the world look like <em>there</em>?</p>
+<p>I think about this when people ask why rendering fidelity matters for embodied AI. The answer isn't "it looks better." It's that an agent trained in HDR simulation is training on the actual distribution of light that the real world has. The gap between sim and real narrows when the sim is honest about what light is.</p>`
+    },
+    {
+      date: "2025",
+      tags: ["representation", "rendering"],
+      title: "Level-of-Detail: The Art of Deciding What Matters",
+      excerpt: "LOD is usually described as a performance optimization. But it's really a theory of attention — a formal claim about what the observer can perceive from where they stand.",
+      body: `<p>The classic LOD idea is simple: far objects don't need high polygon counts because they're small on screen. Swap in a simpler mesh, save GPU cycles. This framing treats LOD as a cost-cutting measure.</p>
+<p>But there's a deeper reading. <strong>LOD is a compression function parameterized by the observer state.</strong> The level of detail rendered isn't a property of the object — it's a function of the distance, angle, velocity, and even the task the observer is performing.</p>
+<div class="pull-quote">A tree needs 10,000 polygons when you're standing under it. It needs 12 when it's part of a forest horizon. The tree didn't change.</div>
+<p>3D Gaussian Splatting takes this further. Gaussians are analytically differentiable splats — their screen-space footprint scales continuously with distance. There's no discrete LOD switching, no pop-in artifacts. The scene adapts smoothly to the projection, which feels more honest to how vision actually works.</p>
+<p>The philosophical question LOD raises: is perceptual fidelity about the scene or about the observer-scene relationship? I think it's the latter, and this has implications for simulation. A world model doesn't need to represent everything at full resolution — it needs to represent what the agent currently needs. LOD is a prior over relevance. Getting it right means understanding what "matters" means from inside an experience.</p>`
+    },
+    {
+      date: "2024",
+      tags: ["representation"],
+      title: "Neural Radiance Fields as Implicit Knowledge",
+      excerpt: "A NeRF knows something about the world that no single image knows. It has internalized a 3D belief — a compression of all the viewpoints it was trained on.",
+      body: `<p>Before NeRF, scene representation was explicit: meshes, point clouds, voxel grids. You described geometry by listing the things in it. After NeRF, you describe a scene by training a function that, when queried at any point, returns what that point looks like.</p>
+<p>This is a profound shift. <strong>The representation isn't a data structure — it's a learned prior.</strong> The MLP that implements a NeRF has generalized across all the training views. It has learned that the world is mostly continuous, that surfaces have a certain distribution of normals, that light behaves in predictable ways. All of this is implicit in the weights.</p>
+<div class="pull-quote">A NeRF doesn't store images. It stores a compressed theory of the scene.</div>
+<p>What I find philosophically interesting is what it means for a network to "know" geometry. The MLP has never seen a depth map; it wasn't supervised on 3D annotations. But through the process of learning to render consistent novel views, it developed an internal representation of space. Geometry emerged as a consequence of photometric consistency.</p>
+<p>This is a pattern I keep seeing: intelligence that looks like it "knows" something turns out to have discovered that knowledge as a byproduct of trying to predict observations. The geometry isn't stored anywhere — it's what the function <em>does</em> when queried. The knowledge is distributed across every weight, accessible only through inference.</p>`
+    },
+    {
+      date: "2024",
+      tags: ["intelligence"],
+      title: "World Models: Dreaming Before Acting",
+      excerpt: "A world model is a mind that can simulate before it moves. It separates the plan from the execution, the imagination from the action.",
+      body: `<p>The classic RL loop is: observe → act → observe → act. There's no room for imagination in this loop. The agent learns only from things it has actually experienced.</p>
+<p>World models break this. The agent learns a model of the environment — a function that predicts: given state <code>s</code> and action <code>a</code>, what state <code>s'</code> results, and what reward follows? Once you have this, the agent can plan inside its own head. It can simulate trajectories before committing to any of them.</p>
+<div class="pull-quote">The ability to imagine a consequence before experiencing it is, arguably, the core of intelligence.</div>
+<p>What excites me about world models for embodied AI is that they force a question the field hasn't fully answered: <strong>what does a robot need to model about the world?</strong> You can't model everything. The choice of what to include is a theory of relevance. A good world model is one whose predictions are wrong in ways that don't matter for the task.</p>
+<p>The tension is between fidelity and tractability. A perfect world model is just the world — it's too expensive to run. A useful world model is an approximation that captures the structure the agent cares about. The art is knowing which details to throw away. This is the same question as LOD, as data compression, as abstraction itself.</p>`
+    },
+    {
+      date: "2024",
+      tags: ["intelligence"],
+      title: "Scaffolding: The Infrastructure of Thought",
+      excerpt: "Scaffolding in AI is what context is to human cognition — the external structure that lets you think thoughts you couldn't hold alone.",
+      body: `<p>When people say "scaffold" in the context of language models, they usually mean the prompt framework: chain-of-thought, tool use, memory retrieval, agent loops. But I think scaffolding is deeper than that. It's the claim that <strong>intelligence doesn't live entirely inside the model</strong> — it emerges from the interaction between model and structure.</p>
+<p>Consider how humans solve hard problems. We externalize: we write lists, draw diagrams, talk through things out loud. The paper isn't just recording thought — it's <em>doing</em> thought. The scaffolding is part of the cognitive process, not just a container for it.</p>
+<div class="pull-quote">A large language model with no scaffolding is like a brain with no working memory — all the potential, none of the reach.</div>
+<p>What this means for building AI systems: the architecture of thought matters as much as the power of the thinker. A stronger model with poor scaffolding will lose to a weaker model with well-designed structure. The implication for research is that we should be studying the composition of model + scaffold together, not models in isolation.</p>
+<p>For embodied agents, scaffolding takes the form of task graphs, skill libraries, memory hierarchies, and communication protocols between subagents. The robot that succeeds at long-horizon manipulation isn't necessarily the one with the most capable base model — it's the one whose scaffolding breaks the problem into pieces the model can handle one at a time.</p>`
+    },
+    {
+      date: "2025",
+      tags: ["rendering"],
+      title: "Relighting: When the Scene and the Light Are Separate Things",
+      excerpt: "Relighting is a decomposition problem — it asks you to separate what a surface is from how it happens to be lit, which turns out to be one of the hardest things in vision.",
+      body: `<p>A photograph conflates two things that physics keeps distinct: the intrinsic properties of a surface (its albedo, roughness, normal distribution) and the extrinsic properties of the illumination (direction, spectrum, intensity). We see the product, not the factors.</p>
+<p>Relighting is the attempt to factor this product. Given an image of an object under some unknown lighting, recover the object's material properties — then rerender it under arbitrary new lighting. The problem is fundamentally underdetermined: infinitely many (material, light) pairs could explain any given appearance.</p>
+<div class="pull-quote">Inverse rendering asks: if this is what the world looks like, what must the world be like? It's abductive reasoning in the space of physics.</div>
+<p>Neural approaches to relighting — scene representations that disentangle geometry, material, and illumination — are exciting because they get the inductive bias right. A network that knows about BRDFs, that knows light travels in straight lines and bounces according to physical laws, generalizes much better than one that just maps pixels to pixels.</p>
+<p>For downstream applications (virtual try-on, AR insertion, embodied navigation), relighting is crucial. An agent that can relight a scene can ask: "what would this look like at night? In different weather? With a flashlight?" This is a form of counterfactual reasoning — and counterfactual reasoning is how you plan robustly.</p>`
+    },
+    {
+      date: "2025",
+      tags: ["intelligence"],
+      title: "The Agent Turn: From Prediction to Action",
+      excerpt: "The difference between a model and an agent is a loop. An agent doesn't just predict the next token — it decides, acts, observes the consequence, and updates. The loop is everything.",
+      body: `<p>For years the prevailing paradigm was supervised learning: given inputs, predict outputs. Even large language models, in their base form, are sequence predictors — elaborate autocomplete engines. The shift to agents is a shift from open-loop to closed-loop.</p>
+<p>An agent is defined by a <strong>sense-think-act loop</strong>. It perceives the environment, reasons about what to do, executes an action, and the environment changes. The new state becomes the next observation. This loop introduces something that pure prediction lacks: <em>consequence</em>. The agent's outputs matter in a way that a prediction doesn't — they change the world the agent is trying to model.</p>
+<div class="pull-quote">A prediction is a claim about the future. An action is a bet on it.</div>
+<p>What I find architecturally fascinating about modern LLM-based agents is that they borrow the language model's strengths (broad knowledge, flexible reasoning, natural language interface) and embed them in a loop structure that adds temporal extent. The model no longer just completes a prompt — it maintains a task, accumulates observations, and pursues a goal over many steps.</p>
+<p>The hard problems are: how do you maintain coherent goal pursuit over long horizons? How do you handle the mismatch between the model's training distribution (static text) and the agent's deployment distribution (dynamic, interactive environments)? How do you know when to act and when to think more? These are, I suspect, the questions that will define the next five years of AI research.</p>`
+    },
+    {
+      date: "2024",
+      tags: ["simulation"],
+      title: "Stochastic Process: The World as a Distribution, Not a Fact",
+      excerpt: "Treating the world as deterministic is a useful fiction. The more honest model is probabilistic — the future is a distribution, and intelligence is good calibration.",
+      body: `<p>Classical mechanics gave us a deterministic universe: given perfect knowledge of the initial state, the future follows inevitably. This was reassuring and false. The world resists complete specification. Measurement has noise. Systems are chaotic. Quantum mechanics says randomness is irreducible.</p>
+<p>A stochastic process is a family of random variables indexed by time. It's not a trajectory — it's a <em>distribution</em> over possible trajectories. This is the honest model of the world for an agent that has incomplete information and imperfect sensors.</p>
+<div class="pull-quote">You don't navigate the world; you navigate your uncertainty about it. The skill is knowing where you are in the distribution.</div>
+<p>For robotics and embodied AI, this matters practically. A robot manipulating an object doesn't know the exact coefficient of friction, the precise mass, the exact position after a grasp. It has a belief distribution over these quantities. Planning in this setting means planning for the distribution — finding actions that are robust across the likely states of the world, not just optimal for the most probable one.</p>
+<p>What I find beautiful about probabilistic models is that they force you to be explicit about what you don't know. A deterministic planner ignores uncertainty by assuming it away. A stochastic planner encodes uncertainty as a first-class object and reasons about it directly. The latter is harder to build but more honest — and more robust when the world surprises you, which it always does.</p>`
+    },
+    {
+      date: "2025",
+      tags: ["simulation", "intelligence"],
+      title: "Simulation & Real: The Gap That Defines the Problem",
+      excerpt: "Every sim-to-real paper is secretly a paper about the nature of representation. What is it that we're failing to simulate? The answer is always more interesting than 'physics fidelity'.",
+      body: `<p>The sim-to-real gap is one of the defining problems of robotics. Train an agent in simulation, deploy in the real world, watch it fail in ways that make sense only in retrospect. The failure modes are diagnostic: they reveal what the simulation was missing, what abstraction was too aggressive, what approximation was load-bearing in a way you didn't anticipate.</p>
+<p>Common culprits: contact dynamics (the simulation is too stiff or too soft), visual distribution shift (sim renders too cleanly, real world has motion blur, variable lighting, sensor noise), action latency (the robot's motor commands take time to execute, which the sim doesn't model), and the long tail of human-environment interactions that you couldn't enumerate in advance.</p>
+<div class="pull-quote">Simulation is a theory of the world. Sim-to-real transfer is what happens when your theory meets the world's counter-arguments.</div>
+<p><strong>Domain randomization</strong> is the current answer: randomize everything in sim — friction, mass, lighting, camera properties — and hope that the real world falls inside the distribution you trained on. It works surprisingly often. But it's also unsatisfying: you're asking the agent to be robust to variations you're not sure are the right variations.</p>
+<p>The deeper fix is to build simulations that understand the generative process behind the gap — that model how real sensor noise is generated, how contact actually works at the millimeter scale, how human environments have affordances that don't appear in any asset library. This is effectively the world model problem again, applied to the simulator itself. The sim needs to be honest about what it doesn't know, and explicit about where it's approximating. Only then can you reason about whether your agent's training is actually preparing it for reality.</p>`
+    }
+  ];
+
+  /* ── Render post list ── */
+  const listEl = document.getElementById('post-list');
+
+  function renderPosts(filterTag) {
+    listEl.innerHTML = '';
+    posts
+      .filter(p => filterTag === 'all' || p.tags.includes(filterTag))
+      .forEach((p, i) => {
+        const el = document.createElement('div');
+        el.className = 'post-item';
+        el.dataset.idx = posts.indexOf(p);
+        el.innerHTML = `
+          <div class="post-date">
+            <span class="year">${p.date}</span>
+            <span class="dot"></span>
+          </div>
+          <div class="post-body">
+            <p class="post-tags-line">${p.tags.join(' · ')}</p>
+            <h2 class="post-title">${p.title}</h2>
+            <p class="post-excerpt">${p.excerpt}</p>
+            <span class="post-read">Read more →</span>
+          </div>
+        `;
+        el.addEventListener('click', () => openPost(+el.dataset.idx));
+        listEl.appendChild(el);
+        setTimeout(() => {
+          el.style.transitionDelay = (i * 60) + 'ms';
+          el.classList.add('visible');
+        }, 50);
+      });
+  }
+
+  renderPosts('all');
+
+  /* ── Tag filter ── */
+  document.querySelectorAll('.tag-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.tag-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      renderPosts(btn.dataset.tag);
+    });
+  });
+
+  /* ── Post reader ── */
+  const overlay   = document.getElementById('post-overlay');
+  const backdrop  = document.getElementById('post-backdrop');
+  const closeBtn  = document.getElementById('reader-close');
+
+  function openPost(idx) {
+    const p = posts[idx];
+    document.getElementById('reader-tag').textContent   = p.tags.join(' · ');
+    document.getElementById('reader-title').textContent = p.title;
+    document.getElementById('reader-meta').textContent  = p.date + ' · ' + p.excerpt;
+    document.getElementById('reader-body').innerHTML    = p.body;
+    overlay.classList.add('open');
+    document.body.style.overflow = 'hidden';
+    overlay.scrollTop = 0;
+  }
+
+  function closePost() {
+    overlay.classList.remove('open');
+    document.body.style.overflow = '';
+  }
+
+  backdrop.addEventListener('click', closePost);
+  closeBtn.addEventListener('click', closePost);
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') closePost(); });
+
+  /* ── Starfield ── */
+  (function() {
+    const c = document.getElementById('starfield');
+    const ctx = c.getContext('2d');
+    let W, H, stars = [];
+    function resize() { W = c.width = window.innerWidth; H = c.height = window.innerHeight; }
+    function mkStars() {
+      stars = Array.from({length: 200}, () => ({
+        x: Math.random()*W, y: Math.random()*H,
+        r: Math.random()*0.9 + 0.1,
+        a: Math.random()*0.5 + 0.05,
+        da: (Math.random()*0.003 + 0.001) * (Math.random()<0.5?1:-1)
+      }));
+    }
+    function draw() {
+      ctx.clearRect(0,0,W,H);
+      stars.forEach(s => {
+        s.a = Math.max(0.04, Math.min(0.6, s.a + s.da));
+        if (s.a >= 0.6 || s.a <= 0.04) s.da *= -1;
+        ctx.beginPath(); ctx.arc(s.x, s.y, s.r, 0, Math.PI*2);
+        ctx.fillStyle = `rgba(180,210,255,${s.a})`; ctx.fill();
+      });
+      requestAnimationFrame(draw);
+    }
+    resize(); mkStars(); draw();
+    window.addEventListener('resize', () => { resize(); mkStars(); });
+  })();
+  </script>
+</body>
+</html>

@@ -1,0 +1,2049 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>My Room — Linning Xu</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=DM+Sans:wght@300;400&family=Cormorant+Garamond:ital,wght@0,300;1,300;1,400&display=swap"
+    rel="stylesheet">
+  <style>
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0
+    }
+
+    :root {
+      --wall: #1e1630;
+      --wall2: #251c38;
+      --floor: #3a2710;
+      --floor2: #4a3318;
+      --shelf: #6b3e1e;
+      --shelfd: #3e2010;
+      --sofa: #2d3a5c;
+      --cream: #f0e8d8;
+      --dim: rgba(240, 232, 216, 0.38);
+      --faint: rgba(240, 232, 216, 0.18);
+    }
+
+    html,
+    body {
+      width: 100%;
+      height: 100%;
+      background: #0d0a14;
+      overflow: hidden;
+      font-family: 'DM Sans', sans-serif;
+      color: var(--cream);
+    }
+
+    /* starfield canvas sits behind everything */
+    #starfield {
+      position: fixed;
+      inset: 0;
+      width: 100vw;
+      height: 100vh;
+      z-index: 0;
+      pointer-events: none;
+    }
+
+    /* nav */
+    nav {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 300;
+      padding: .9rem 1.6rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: linear-gradient(to bottom, rgba(13, 10, 20, .92) 55%, transparent);
+    }
+
+    .back-btn {
+      color: var(--dim);
+      text-decoration: none;
+      font-size: .72rem;
+      font-weight: 300;
+      letter-spacing: .14em;
+      text-transform: uppercase;
+      transition: color .2s;
+    }
+
+    .back-btn:hover {
+      color: var(--cream);
+    }
+
+    .nav-title {
+      font-family: 'Press Start 2P', monospace;
+      font-size: .55rem;
+      color: rgba(240, 232, 216, .45);
+      letter-spacing: .1em;
+    }
+
+    .nav-hint {
+      font-size: .65rem;
+      font-weight: 300;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      color: var(--faint);
+    }
+
+    /* scene wrapper — centres + clips the scaled room */
+    #scene-wrap {
+      position: fixed;
+      inset: 0;
+      z-index: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+
+    /* ─── THE ROOM (1200×900 px coordinate space) ─── */
+    #room {
+      position: relative;
+      width: 1200px;
+      height: 900px;
+      transform-origin: center center;
+      /* JS sets scale */
+    }
+
+    /* ══ WALLS ══ */
+    .wall-back {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 490px;
+      background: var(--wall);
+    }
+
+    /* subtle brick-ish lines */
+    .wall-back::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background:
+        repeating-linear-gradient(90deg, transparent 0, transparent 149px, rgba(255, 255, 255, .012) 150px, rgba(255, 255, 255, .012) 151px),
+        repeating-linear-gradient(0deg, transparent 0, transparent 74px, rgba(255, 255, 255, .012) 75px, rgba(255, 255, 255, .012) 76px);
+    }
+
+    .wall-left {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 70px;
+      height: 490px;
+      background: linear-gradient(to right, #140e20, var(--wall));
+    }
+
+    .wall-right {
+      position: absolute;
+      top: 0;
+      right: 0;
+      width: 70px;
+      height: 490px;
+      background: linear-gradient(to left, #140e20, var(--wall));
+    }
+
+    .wall-trim {
+      position: absolute;
+      top: 490px;
+      left: 0;
+      right: 0;
+      height: 10px;
+      background: linear-gradient(to bottom, #3a2c50, #28203a);
+      z-index: 5;
+    }
+
+    /* ══ FLOOR ══ */
+    .floor {
+      position: absolute;
+      top: 500px;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: var(--floor);
+      background-image:
+        repeating-linear-gradient(90deg, transparent 0, transparent 149px, rgba(0, 0, 0, .18) 150px, rgba(0, 0, 0, .18) 151px),
+        repeating-linear-gradient(0deg, rgba(255, 255, 255, .018) 0, rgba(255, 255, 255, .018) 1px, transparent 1px, transparent 40px);
+    }
+
+    /* floor perspective fade */
+    .floor::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(to bottom, rgba(0, 0, 0, .25) 0%, transparent 40%);
+      pointer-events: none;
+    }
+
+    /* ══ WINDOW ══ */
+    #window {
+      position: absolute;
+      top: 55px;
+      left: 430px;
+      width: 210px;
+      height: 270px;
+      z-index: 6;
+    }
+
+    .win-rod {
+      position: absolute;
+      top: -16px;
+      left: -42px;
+      right: -42px;
+      height: 7px;
+      background: linear-gradient(to bottom, #8a6030, #5c3e18);
+      z-index: 8;
+    }
+
+    .win-rod::before,
+    .win-rod::after {
+      content: '';
+      position: absolute;
+      top: -3px;
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 38% 35%, #c09050, #7a5020);
+    }
+
+    .win-rod::before {
+      left: -4px
+    }
+
+    .win-rod::after {
+      right: -4px
+    }
+
+    .curtain-l,
+    .curtain-r {
+      position: absolute;
+      top: -12px;
+      width: 52px;
+      height: 298px;
+      z-index: 7;
+      clip-path: polygon(0 0, 100% 0, 80% 100%, 20% 100%);
+    }
+
+    .curtain-l {
+      left: -42px;
+      background: linear-gradient(to right, #5c2870, #7848a8, rgba(80, 48, 112, .5));
+    }
+
+    .curtain-r {
+      right: -42px;
+      background: linear-gradient(to left, #5c2870, #7848a8, rgba(80, 48, 112, .5));
+    }
+
+    /* window glass — transparent so canvas starfield shows through */
+    .win-glass {
+      position: absolute;
+      inset: 0;
+      background: transparent;
+      border: 7px solid #4a3520;
+      box-shadow: inset 0 0 0 3px #2e1e10, 0 0 40px rgba(80, 60, 180, .12), 0 4px 20px rgba(0, 0, 0, .5);
+      z-index: 5;
+      pointer-events: none;
+    }
+
+    /* cross dividers */
+    .win-glass::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 50%;
+      width: 3px;
+      height: 100%;
+      transform: translateX(-50%);
+      background: #4a3520;
+    }
+
+    .win-glass::after {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 0;
+      height: 3px;
+      width: 100%;
+      transform: translateY(-50%);
+      background: #4a3520;
+    }
+
+    .win-moon {
+      position: absolute;
+      top: 28px;
+      right: 34px;
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      z-index: 4;
+      background: radial-gradient(circle at 38% 38%, #fffae0, #f0d860);
+      box-shadow: 0 0 18px rgba(255, 215, 70, .45), 0 0 40px rgba(255, 195, 50, .15);
+    }
+
+    /* ══ PAINTINGS ══ */
+    .painting {
+      position: absolute;
+      z-index: 10;
+      cursor: pointer;
+      transition: transform .25s cubic-bezier(.16, .84, .44, 1);
+    }
+
+    .painting:hover {
+      transform: scale(1.04) translateY(-4px);
+    }
+
+    .painting .frame {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      box-shadow: 4px 5px 0 rgba(0, 0, 0, .55), 0 10px 30px rgba(0, 0, 0, .5);
+    }
+
+    .painting .canvas-art {
+      position: absolute;
+      inset: 9px;
+      overflow: hidden;
+    }
+
+    .painting .plaque {
+      position: absolute;
+      bottom: -20px;
+      left: 0;
+      right: 0;
+      text-align: center;
+      font-family: 'Press Start 2P', monospace;
+      font-size: .21rem;
+      color: rgba(240, 232, 216, .32);
+      letter-spacing: .08em;
+    }
+
+    .painting .glow {
+      position: absolute;
+      inset: -10px;
+      opacity: 0;
+      transition: opacity .3s;
+      pointer-events: none;
+    }
+
+    .painting:hover .glow {
+      opacity: 1;
+    }
+
+    /* ══ MUSIC POSTERS ══ */
+    .poster {
+      position: absolute;
+      z-index: 10;
+      cursor: pointer;
+      transition: transform .25s;
+    }
+
+    .poster:hover {
+      transform: scale(1.05) translateY(-3px);
+    }
+
+    .poster-inner {
+      width: 100%;
+      height: 100%;
+      box-shadow: 3px 3px 0 rgba(0, 0, 0, .5), 0 6px 18px rgba(0, 0, 0, .45);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 6px;
+      gap: 4px;
+    }
+
+    /* ══ BOOKSHELF ══ */
+    #bookshelf {
+      position: absolute;
+      top: 178px;
+      left: 72px;
+      width: 230px;
+      height: 314px;
+      z-index: 10;
+      cursor: default;
+    }
+
+    .shelf-frame {
+      position: absolute;
+      inset: 0;
+      border: 9px solid var(--shelf);
+      border-bottom: 0;
+      box-shadow: inset 0 0 30px rgba(0, 0, 0, .45), 5px 8px 28px rgba(0, 0, 0, .55);
+    }
+
+    .shelf-frame::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 5px;
+      background: linear-gradient(to bottom, #9a6030, var(--shelf));
+    }
+
+    .shelf-plank {
+      position: absolute;
+      left: 9px;
+      right: 9px;
+      height: 11px;
+      background: linear-gradient(to bottom, var(--shelf), var(--shelfd));
+      box-shadow: 0 4px 10px rgba(0, 0, 0, .45);
+    }
+
+    .shelf-plank::after {
+      content: '';
+      position: absolute;
+      bottom: -3px;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: var(--shelfd);
+    }
+
+    /* three planks */
+    .shelf-plank:nth-child(1) {
+      top: 90px
+    }
+
+    .shelf-plank:nth-child(2) {
+      top: 192px
+    }
+
+    .shelf-plank:nth-child(3) {
+      bottom: 0
+    }
+
+    .shelf-row {
+      position: absolute;
+      left: 12px;
+      right: 12px;
+      display: flex;
+      align-items: flex-end;
+      gap: 3px;
+    }
+
+    /* pixel books */
+    .pbook {
+      flex-shrink: 0;
+      cursor: pointer;
+      transition: transform .2s;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .pbook:hover {
+      transform: translateY(-7px);
+    }
+
+    .pbook-spine {
+      writing-mode: vertical-rl;
+      text-orientation: mixed;
+      transform: rotate(180deg);
+      font-family: 'Press Start 2P', monospace;
+      font-size: .22rem;
+      color: rgba(255, 255, 255, .65);
+      letter-spacing: .06em;
+      overflow: hidden;
+      white-space: nowrap;
+      padding: 4px 0;
+      max-height: 100%;
+    }
+
+    .ghost-book {
+      flex-shrink: 0;
+      opacity: .35;
+    }
+
+    /* shelf decor */
+    .shelf-candle {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin-left: auto;
+    }
+
+    .candle-flame {
+      width: 7px;
+      height: 12px;
+      background: radial-gradient(ellipse at bottom, #fff8c8 20%, #ffb840 55%, transparent 100%);
+      border-radius: 50% 50% 18% 18%;
+      animation: flicker 1.9s ease-in-out infinite;
+      margin-bottom: 2px;
+    }
+
+    @keyframes flicker {
+
+      0%,
+      100% {
+        transform: scaleX(1) scaleY(1);
+        opacity: 1
+      }
+
+      33% {
+        transform: scaleX(.82) scaleY(1.1);
+        opacity: .88
+      }
+
+      66% {
+        transform: scaleX(1.08) scaleY(.93);
+        opacity: .95
+      }
+    }
+
+    .candle-body {
+      width: 11px;
+      height: 35px;
+      background: linear-gradient(to right, #e8ddc8, #f5f0e0, #c8c0a8);
+    }
+
+    .candle-wax {
+      width: 11px;
+      height: 3px;
+      background: #c8c090;
+    }
+
+    /* ══ SOFA ══ */
+    #sofa {
+      position: absolute;
+      top: 322px;
+      left: 372px;
+      width: 370px;
+      z-index: 9;
+    }
+
+    .sofa-back {
+      height: 88px;
+      position: relative;
+      background: linear-gradient(135deg, #3a4d7a, #2d3d64, #24306a);
+      box-shadow: 0 -2px 0 rgba(100, 140, 220, .18), 3px 3px 0 #1a2445;
+    }
+
+    .sofa-back::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(to right, rgba(255, 255, 255, .04), transparent 60%);
+    }
+
+    .sofa-seat {
+      height: 58px;
+      margin: 0 10px;
+      position: relative;
+      background: linear-gradient(to bottom, #2d3d64, #243060);
+    }
+
+    .sofa-arm {
+      position: absolute;
+      top: 0;
+      width: 22px;
+      height: 146px;
+      background: linear-gradient(to right, #2d3d64, #1e2850);
+    }
+
+    .sofa-arm.l {
+      left: -22px
+    }
+
+    .sofa-arm.r {
+      right: -22px
+    }
+
+    .sofa-leg {
+      position: absolute;
+      bottom: -14px;
+      width: 11px;
+      height: 14px;
+      background: #3d2810;
+    }
+
+    .sofa-leg.l {
+      left: 18px
+    }
+
+    .sofa-leg.r {
+      right: 18px
+    }
+
+    .sofa-pillow {
+      position: absolute;
+      top: 8px;
+      width: 52px;
+      height: 44px;
+      box-shadow: inset 2px 2px 0 rgba(255, 255, 255, .08);
+    }
+
+    /* ══ FLOOR LAMP ══ */
+    #lamp {
+      position: absolute;
+      top: 322px;
+      left: 344px;
+      z-index: 12;
+    }
+
+    .lamp-halo {
+      position: absolute;
+      top: -24px;
+      left: -68px;
+      width: 170px;
+      height: 180px;
+      background: radial-gradient(ellipse at 50% 25%, rgba(255, 185, 60, .09), transparent 70%);
+      pointer-events: none;
+    }
+
+    .lamp-shade {
+      width: 42px;
+      height: 22px;
+      background: linear-gradient(to bottom, #f5e09a, #d4bc70);
+      clip-path: polygon(6% 0%, 94% 0%, 100% 100%, 0% 100%);
+    }
+
+    .lamp-pole {
+      width: 4px;
+      height: 130px;
+      background: linear-gradient(to right, #a08060, #887040);
+      margin: 0 auto;
+    }
+
+    .lamp-base {
+      width: 22px;
+      height: 8px;
+      background: linear-gradient(to bottom, #887040, #665020);
+      margin: 0 auto;
+    }
+
+    /* ══ RUG ══ */
+    #rug {
+      position: absolute;
+      top: 512px;
+      left: 290px;
+      right: 215px;
+      height: 105px;
+      z-index: 7;
+      background: linear-gradient(135deg, #4a1e42, #3a1632, #4a1e42);
+      box-shadow: 0 2px 0 rgba(255, 255, 255, .03);
+    }
+
+    #rug::before {
+      content: '';
+      position: absolute;
+      inset: 7px;
+      border: 2px solid rgba(210, 140, 170, .18);
+    }
+
+    #rug::after {
+      content: '';
+      position: absolute;
+      inset: 13px;
+      border: 1px solid rgba(210, 140, 170, .1);
+    }
+
+    /* ══ COFFEE TABLE ══ */
+    #coffee-table {
+      position: absolute;
+      top: 502px;
+      left: 388px;
+      width: 224px;
+      height: 40px;
+      z-index: 13;
+      background: linear-gradient(to bottom, #7a5030, #5c3818);
+      box-shadow: 4px 4px 0 #3a2210;
+    }
+
+    #coffee-table::before {
+      content: '';
+      position: absolute;
+      top: -8px;
+      left: 12px;
+      right: 12px;
+      height: 8px;
+      background: linear-gradient(to bottom, #8a6040, #7a5030);
+    }
+
+    #coffee-table::after {
+      content: '';
+      position: absolute;
+      bottom: -22px;
+      left: 12px;
+      right: 12px;
+      height: 22px;
+      background: linear-gradient(to right, #3d2010 0, #3d2010 10%, transparent 10%, transparent 43%, #3d2010 43%, #3d2010 57%, transparent 57%, transparent 90%, #3d2010 90%, #3d2010 100%);
+    }
+
+    .table-items {
+      position: absolute;
+      bottom: 40px;
+      left: 14px;
+      right: 14px;
+      display: flex;
+      justify-content: center;
+      align-items: flex-end;
+      gap: 18px;
+    }
+
+    /* ══ MUSIC CORNER ══ */
+    #music-corner {
+      position: absolute;
+      top: 295px;
+      right: 72px;
+      width: 208px;
+      z-index: 10;
+    }
+
+    .turntable-unit {
+      width: 140px;
+      height: 76px;
+      position: relative;
+      background: linear-gradient(to bottom, #1e1e30, #14141e);
+      box-shadow: 2px 2px 0 #0e0e18, 0 4px 16px rgba(0, 0, 0, .5);
+      margin: 0 auto 0 0;
+    }
+
+    .tt-platter {
+      position: absolute;
+      top: 7px;
+      left: 8px;
+      width: 52px;
+      height: 52px;
+      border-radius: 50%;
+      background: radial-gradient(circle, #28283c 20%, #181826 38%, #323232 40%, #101010 43%, #282828 47%, #181826 100%);
+      border: 1px solid #404040;
+      animation: spin 9s linear infinite;
+    }
+
+    @keyframes spin {
+      from {
+        transform: rotate(0deg)
+      }
+
+      to {
+        transform: rotate(360deg)
+      }
+    }
+
+    .tt-label {
+      position: absolute;
+      inset: 30%;
+      border-radius: 50%;
+      background: radial-gradient(circle, #b81840, #801028);
+    }
+
+    .tt-arm {
+      position: absolute;
+      top: 9px;
+      right: 14px;
+      width: 44px;
+      height: 3px;
+      background: #a0a0b0;
+      transform-origin: right center;
+      transform: rotate(-18deg);
+    }
+
+    .tt-arm::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: -2px;
+      width: 7px;
+      height: 7px;
+      background: #808090;
+    }
+
+    .music-desk-top {
+      width: 208px;
+      height: 13px;
+      background: linear-gradient(to bottom, #7a5030, #5c3a20);
+    }
+
+    .music-desk-body {
+      width: 208px;
+      height: 110px;
+      position: relative;
+      background: linear-gradient(to bottom, #5c3a20, #3d2510);
+      box-shadow: 5px 5px 0 #2a1a0c, 0 8px 24px rgba(0, 0, 0, .5);
+    }
+
+    .vinyl-stack {
+      position: absolute;
+      top: 12px;
+      right: 14px;
+      width: 56px;
+      height: 56px;
+    }
+
+    .vinyl-disc {
+      position: absolute;
+      width: 52px;
+      height: 52px;
+      border-radius: 50%;
+      background: radial-gradient(circle, #282838 24%, #181824 36%, #303030 38%, #0e0e0e 41%, #222230 100%);
+      border: 1px solid #3a3a4a;
+      cursor: pointer;
+      transition: transform .2s;
+    }
+
+    .vinyl-disc:hover {
+      transform: scale(1.1) !important;
+    }
+
+    .vinyl-disc:nth-child(1) {
+      top: 0;
+      left: 0;
+      transform: rotate(-6deg)
+    }
+
+    .vinyl-disc:nth-child(2) {
+      top: 3px;
+      left: 3px;
+      transform: rotate(9deg)
+    }
+
+    .vinyl-disc:nth-child(3) {
+      top: 6px;
+      left: 6px;
+      transform: rotate(-3deg)
+    }
+
+    /* speaker */
+    .speaker {
+      position: absolute;
+      top: 14px;
+      left: 14px;
+      width: 32px;
+      height: 54px;
+      background: linear-gradient(to bottom, #2a2a3e, #1a1a2e);
+      box-shadow: 2px 2px 0 #0e0e1a;
+    }
+
+    .speaker-cone {
+      position: absolute;
+      top: 6px;
+      left: 4px;
+      right: 4px;
+      height: 24px;
+      border-radius: 50%;
+      background: radial-gradient(circle, #3a3a4e, #1a1a2e);
+      border: 1px solid #4a4a5e;
+    }
+
+    .speaker-led {
+      position: absolute;
+      bottom: 6px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 5px;
+      height: 5px;
+      background: #28aa48;
+      border-radius: 50%;
+      box-shadow: 0 0 7px rgba(40, 200, 80, .7);
+      animation: led-blink 3s ease-in-out infinite;
+    }
+
+    @keyframes led-blink {
+
+      0%,
+      100% {
+        opacity: 1
+      }
+
+      50% {
+        opacity: .4
+      }
+    }
+
+    /* ══ UPPER KITCHEN CABINETS ══ */
+    #upper-cabinets {
+      position: absolute;
+      top: 305px;
+      left: 72px;
+      width: 290px;
+      height: 95px;
+      z-index: 8;
+    }
+
+    .ucab-body {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(to bottom, #5c3a20, #4a2e14);
+      border-bottom: 4px solid #3a2210;
+    }
+
+    .ucab-door {
+      position: absolute;
+      top: 5px;
+      bottom: 5px;
+      width: 62px;
+      border: 2px solid #3a2210;
+      background: linear-gradient(135deg, #6b4020, #5c3418);
+      cursor: pointer;
+      transition: transform .18s;
+    }
+
+    .ucab-door:hover {
+      transform: translateX(2px);
+    }
+
+    .ucab-door:nth-child(1) {
+      left: 5px
+    }
+
+    .ucab-door:nth-child(2) {
+      left: 74px
+    }
+
+    .ucab-door:nth-child(3) {
+      left: 143px
+    }
+
+    .ucab-door:nth-child(4) {
+      left: 212px
+    }
+
+    .ucab-handle {
+      position: absolute;
+      bottom: 7px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 20px;
+      height: 4px;
+      background: #8a6040;
+    }
+
+    .ucab-glass {
+      background: rgba(30, 50, 80, .4) !important;
+      border-color: #5a4030 !important;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 2px;
+      font-size: 13px;
+    }
+
+    /* ══ KITCHEN COUNTER ══ */
+    #kitchen {
+      position: absolute;
+      bottom: 0;
+      left: 72px;
+      width: 310px;
+      height: 260px;
+      z-index: 10;
+    }
+
+    .counter-surface {
+      position: absolute;
+      bottom: 130px;
+      left: 0;
+      right: 0;
+      height: 14px;
+      background: linear-gradient(to bottom, #d4c4a0, #b0a080);
+      box-shadow: 0 4px 0 #8a7860;
+    }
+
+    .counter-body {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 130px;
+      background: linear-gradient(to bottom, var(--shelf), #3d2510);
+      box-shadow: 5px 0 0 #2a1808;
+    }
+
+    .cab-door {
+      position: absolute;
+      bottom: 8px;
+      height: 88px;
+      width: 66px;
+      border: 2px solid #3a2410;
+      background: linear-gradient(135deg, #6b4020, #5c3418);
+    }
+
+    .cab-door:nth-child(1) {
+      left: 6px
+    }
+
+    .cab-door:nth-child(2) {
+      left: 80px
+    }
+
+    .cab-door:nth-child(3) {
+      left: 154px
+    }
+
+    .cab-door:nth-child(4) {
+      left: 228px
+    }
+
+    .cab-handle {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 22px;
+      height: 5px;
+      background: #8a6040;
+    }
+
+    /* items on counter */
+    .counter-items {
+      position: absolute;
+      bottom: 144px;
+      left: 8px;
+      right: 8px;
+      display: flex;
+      align-items: flex-end;
+      gap: 10px;
+      flex-wrap: nowrap;
+    }
+
+    .citem {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      cursor: pointer;
+      transition: transform .2s;
+      flex-shrink: 0;
+    }
+
+    .citem:hover {
+      transform: translateY(-5px);
+    }
+
+    .citem .ico {
+      font-size: 22px;
+      line-height: 1;
+    }
+
+    .clabel {
+      font-family: 'Press Start 2P', monospace;
+      font-size: .18rem;
+      color: rgba(240, 232, 216, .3);
+      text-align: center;
+      margin-top: 3px;
+      white-space: nowrap;
+    }
+
+    /* steam */
+    .steam {
+      font-size: 9px;
+      opacity: .5;
+      text-align: center;
+      animation: steam-rise 2.2s ease-in-out infinite;
+    }
+
+    @keyframes steam-rise {
+
+      0%,
+      100% {
+        transform: translateY(0);
+        opacity: .5
+      }
+
+      50% {
+        transform: translateY(-5px);
+        opacity: .2
+      }
+    }
+
+    /* ══ BATHROOM ══ */
+    #bathroom {
+      position: absolute;
+      bottom: 0;
+      right: 72px;
+      width: 250px;
+      z-index: 10;
+    }
+
+    .bath-doorframe {
+      position: absolute;
+      bottom: 0;
+      right: 0;
+      width: 118px;
+      height: 232px;
+      border: 8px solid #4a3520;
+      border-bottom: none;
+    }
+
+    .bath-door {
+      position: absolute;
+      bottom: 0;
+      left: 8px;
+      width: 102px;
+      height: 216px;
+      background: linear-gradient(to right, #3a2810, #2a1c0c);
+      transform-origin: left center;
+      transform: perspective(400px) rotateY(-22deg);
+      box-shadow: -8px 0 20px rgba(0, 0, 0, .55);
+    }
+
+    .bath-door::before,
+    .bath-door::after {
+      content: '';
+      position: absolute;
+      left: 9px;
+      right: 9px;
+      border: 2px solid rgba(255, 255, 255, .04);
+    }
+
+    .bath-door::before {
+      top: 18px;
+      height: 72px
+    }
+
+    .bath-door::after {
+      top: 108px;
+      height: 90px
+    }
+
+    .bath-knob {
+      position: absolute;
+      right: 9px;
+      top: 48%;
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 35% 35%, #e0c060, #a07c18);
+      box-shadow: 0 2px 4px rgba(0, 0, 0, .5);
+    }
+
+    /* bathroom interior visible through gap */
+    .bath-interior {
+      position: absolute;
+      bottom: 0;
+      right: 118px;
+      width: 82px;
+      height: 232px;
+      overflow: hidden;
+      background: linear-gradient(to right, #16283a, #1e3248);
+    }
+
+    .bath-tiles {
+      position: absolute;
+      inset: 0;
+      background-image:
+        repeating-linear-gradient(90deg, rgba(255, 255, 255, .055) 0, rgba(255, 255, 255, .055) 1px, transparent 1px, transparent 22px),
+        repeating-linear-gradient(0deg, rgba(255, 255, 255, .055) 0, rgba(255, 255, 255, .055) 1px, transparent 1px, transparent 22px);
+    }
+
+    .bath-shelf {
+      position: absolute;
+      top: 88px;
+      left: 0;
+      right: 0;
+      height: 5px;
+      background: rgba(255, 255, 255, .14);
+    }
+
+    .bath-products {
+      position: absolute;
+      top: 64px;
+      left: 6px;
+      display: flex;
+      gap: 4px;
+      align-items: flex-end;
+    }
+
+    /* product bottles */
+    .bottle {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      cursor: pointer;
+      transition: transform .2s;
+    }
+
+    .bottle:hover {
+      transform: translateY(-4px);
+    }
+
+    .btop {
+      width: 5px;
+      height: 5px;
+    }
+
+    .bbody {
+      width: 10px;
+    }
+
+    .bath-sign {
+      position: absolute;
+      top: 16px;
+      right: 18px;
+      font-family: 'Press Start 2P', monospace;
+      font-size: .2rem;
+      color: rgba(240, 232, 216, .35);
+      letter-spacing: .05em;
+    }
+
+    /* ══ CATS ══ */
+    .cat {
+      position: absolute;
+      z-index: 22;
+      font-size: 30px;
+      line-height: 1;
+      filter: drop-shadow(0 4px 8px rgba(0, 0, 0, .4));
+      user-select: none;
+    }
+
+    .cat-sofa {
+      top: 310px;
+      left: 580px;
+      font-size: 26px;
+    }
+
+    .cat-floor1 {
+      top: 574px;
+      left: 380px;
+      animation: cat-idle 4s ease-in-out infinite;
+    }
+
+    .cat-floor2 {
+      top: 598px;
+      left: 620px;
+      font-size: 26px;
+      animation: cat-idle 3s ease-in-out infinite reverse;
+    }
+
+    @keyframes cat-idle {
+
+      0%,
+      100% {
+        transform: translateX(0)
+      }
+
+      50% {
+        transform: translateX(9px)
+      }
+    }
+
+    /* ══ ROBOTS ══ */
+    .robot {
+      position: absolute;
+      z-index: 22;
+      font-size: 22px;
+      line-height: 1;
+      filter: drop-shadow(0 2px 8px rgba(100, 200, 255, .25));
+      animation: robot-patrol 7s linear infinite;
+    }
+
+    .robot2 {
+      animation-delay: -3.5s;
+      animation-direction: alternate;
+      font-size: 18px;
+    }
+
+    @keyframes robot-patrol {
+      0% {
+        transform: translateX(0) scaleX(1)
+      }
+
+      49% {
+        transform: translateX(55px) scaleX(1)
+      }
+
+      50% {
+        transform: translateX(55px) scaleX(-1)
+      }
+
+      100% {
+        transform: translateX(0) scaleX(-1)
+      }
+    }
+
+    /* ══ INTERACTIVE TOOLTIP (desktop hover) ══ */
+    .tooltip {
+      position: absolute;
+      z-index: 50;
+      background: rgba(16, 10, 28, .96);
+      border: 1px solid rgba(255, 255, 255, .07);
+      padding: 11px 14px;
+      max-width: 230px;
+      pointer-events: none;
+      opacity: 0;
+      transform: translateY(5px);
+      transition: opacity .18s, transform .18s;
+      box-shadow: 0 8px 28px rgba(0, 0, 0, .55);
+    }
+
+    .tooltip.show {
+      opacity: 1;
+      transform: translateY(0)
+    }
+
+    .tt-cat {
+      font-family: 'Press Start 2P', monospace;
+      font-size: .2rem;
+      color: var(--faint);
+      margin-bottom: 5px;
+      letter-spacing: .08em
+    }
+
+    .tt-name {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 1rem;
+      font-weight: 300;
+      font-style: italic;
+      color: var(--cream);
+      margin-bottom: 3px
+    }
+
+    .tt-sub {
+      font-size: .68rem;
+      font-weight: 300;
+      color: var(--dim)
+    }
+
+    /* ══ MODAL ══ */
+    #modal {
+      position: fixed;
+      inset: 0;
+      z-index: 500;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity .28s;
+    }
+
+    #modal.open {
+      opacity: 1;
+      pointer-events: all
+    }
+
+    #modal-bg {
+      position: absolute;
+      inset: 0;
+      background: rgba(5, 2, 12, .86);
+      backdrop-filter: blur(8px);
+    }
+
+    #modal-panel {
+      position: relative;
+      z-index: 1;
+      background: #0f0a1c;
+      border: 1px solid rgba(255, 255, 255, .06);
+      max-width: 540px;
+      width: 100%;
+      padding: 2.4rem 2.2rem;
+      box-shadow: 0 24px 80px rgba(0, 0, 0, .7);
+      transform: translateY(14px);
+      transition: transform .32s cubic-bezier(.16, .84, .44, 1);
+    }
+
+    #modal.open #modal-panel {
+      transform: translateY(0)
+    }
+
+    #modal-close {
+      position: absolute;
+      top: .9rem;
+      right: 1rem;
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-size: 1rem;
+      color: var(--faint);
+      padding: 4px 8px;
+      transition: color .2s;
+    }
+
+    #modal-close:hover {
+      color: var(--cream)
+    }
+
+    .m-eyebrow {
+      font-family: 'Press Start 2P', monospace;
+      font-size: .26rem;
+      letter-spacing: .1em;
+      margin-bottom: .9rem
+    }
+
+    .m-title {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: clamp(1.5rem, 3vw, 2.3rem);
+      font-weight: 300;
+      font-style: italic;
+      color: var(--cream);
+      line-height: 1;
+      margin-bottom: .25rem
+    }
+
+    .m-sub {
+      font-size: .75rem;
+      font-weight: 300;
+      color: var(--dim);
+      letter-spacing: .06em;
+      margin-bottom: 1.4rem
+    }
+
+    .m-rule {
+      width: 30px;
+      height: 1px;
+      margin-bottom: 1.3rem;
+      opacity: .45
+    }
+
+    .m-note {
+      font-family: 'Cormorant Garamond', serif;
+      font-style: italic;
+      font-weight: 300;
+      font-size: .98rem;
+      line-height: 1.88;
+      color: rgba(240, 232, 216, .74);
+      margin-bottom: 1.4rem
+    }
+
+    .m-tags {
+      font-size: .64rem;
+      font-weight: 300;
+      color: var(--faint);
+      letter-spacing: .08em
+    }
+
+    .m-tags span {
+      margin: 0 .3em
+    }
+
+    /* ══ AMBIENT WARM GLOW ══ */
+    .warm-glow {
+      position: absolute;
+      pointer-events: none;
+      z-index: 3;
+      background: radial-gradient(ellipse at 50% 20%, rgba(255, 185, 60, .07), transparent 70%);
+    }
+
+    @media(max-width:700px) {
+      #modal-panel {
+        max-width: 92vw;
+        padding: 1.6rem 1.4rem
+      }
+
+      .m-title {
+        font-size: 1.5rem
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <canvas id="starfield"></canvas>
+
+  <nav>
+    <a href="./index.html" class="back-btn">← back</a>
+    <span class="nav-title">my room</span>
+    <span class="nav-hint">click anything</span>
+  </nav>
+
+  <div id="scene-wrap">
+    <div id="room">
+
+      <!-- ══ STRUCTURE ══ -->
+      <div class="wall-back"></div>
+      <div class="wall-left"></div>
+      <div class="wall-right"></div>
+      <div class="wall-trim"></div>
+      <div class="floor"></div>
+
+      <!-- Warm lamp ambient light -->
+      <div class="warm-glow" style="top:280px;left:200px;width:320px;height:320px;"></div>
+
+      <!-- ══ WINDOW ══ -->
+      <div id="window">
+        <div class="win-rod"></div>
+        <div class="curtain-l"></div>
+        <div class="curtain-r"></div>
+        <div class="win-moon"></div>
+        <div class="win-glass"></div>
+      </div>
+
+      <!-- ══ PAINTINGS (left wall segment) ══ -->
+
+      <!-- Wayne Thiebaud — gold frame -->
+      <div class="painting" style="top:42px;left:78px;width:118px;height:104px;" data-modal="thiebaud">
+        <div class="frame" style="background:linear-gradient(135deg,#c8a838,#9a7e1a,#d4b440);padding:9px;">
+          <div class="canvas-art" style="background:#f5e8d0;">
+            <svg viewBox="0 0 100 86" width="100%" height="100%">
+              <rect width="100" height="86" fill="#f5e8d0" />
+              <rect x="0" y="55" width="100" height="31" fill="#e8d0b0" />
+              <!-- Cake -->
+              <rect x="9" y="35" width="25" height="20" fill="#f0c898" />
+              <rect x="9" y="30" width="25" height="7" fill="#ff9060" />
+              <rect x="7" y="29" width="29" height="4" fill="#ffd0a0" />
+              <rect x="19" y="21" width="3" height="10" fill="#ffe0a0" />
+              <ellipse cx="20" cy="21" rx="3" ry="4" fill="#ff8020" />
+              <!-- Pie -->
+              <path d="M54 55 L70 32 L86 55 Z" fill="#d4985a" />
+              <ellipse cx="70" cy="55" rx="16" ry="4" fill="#c07840" />
+              <path d="M54 51 Q70 28 86 51" fill="#f0c898" stroke="none" />
+              <!-- Donut -->
+              <circle cx="28" cy="70" r="10" fill="#c0784a" />
+              <circle cx="28" cy="70" r="5" fill="#e8d0b0" />
+              <!-- Lollipop -->
+              <circle cx="76" cy="65" r="9" fill="#e04848" />
+              <rect x="75" y="72" width="3" height="14" fill="#a06040" />
+            </svg>
+          </div>
+        </div>
+        <div class="glow" style="background:radial-gradient(ellipse,rgba(220,195,110,.22),transparent 70%);"></div>
+        <div class="plaque">THIEBAUD</div>
+      </div>
+
+      <!-- Hana Choi — sage frame -->
+      <div class="painting" style="top:42px;left:212px;width:96px;height:128px;" data-modal="hana">
+        <div class="frame" style="background:linear-gradient(135deg,#4a7060,#2d5040,#3a6050);padding:9px;">
+          <div class="canvas-art" style="background:#dde8da;">
+            <svg viewBox="0 0 78 110" width="100%" height="100%">
+              <rect width="78" height="110" fill="#dce8d8" />
+              <rect x="18" y="8" width="42" height="58" fill="#c4d8bc" />
+              <ellipse cx="39" cy="30" rx="11" ry="13" fill="#b4c8a4" opacity=".85" />
+              <rect x="31" y="41" width="16" height="24" fill="#b4c8a4" opacity=".75" />
+              <ellipse cx="39" cy="72" rx="16" ry="7" fill="#98b488" opacity=".35" />
+              <ellipse cx="39" cy="78" rx="12" ry="5" fill="#98b488" opacity=".22" />
+              <rect x="6" y="88" width="66" height="1.5" fill="#f0ece0" opacity=".45" />
+              <ellipse cx="18" cy="98" rx="6" ry="3" fill="#f0ece0" opacity=".38" />
+              <ellipse cx="58" cy="94" rx="5" ry="4" fill="#e8e4d8" opacity=".32" />
+            </svg>
+          </div>
+        </div>
+        <div class="glow" style="background:radial-gradient(ellipse,rgba(148,205,180,.2),transparent 70%);"></div>
+        <div class="plaque">HANA CHOI</div>
+      </div>
+
+      <!-- Coco Capitán — sepia frame -->
+      <div class="painting" style="top:42px;right:204px;width:126px;height:94px;" data-modal="coco">
+        <div class="frame" style="background:linear-gradient(135deg,#8a7050,#6a5030,#8a7050);padding:9px;">
+          <div class="canvas-art" style="background:#f0e4d0;">
+            <svg viewBox="0 0 108 76" width="100%" height="100%">
+              <rect width="108" height="76" fill="#e8d8c0" />
+              <rect x="0" y="0" width="108" height="46" fill="#d0c0a0" />
+              <rect x="0" y="46" width="108" height="30" fill="#e0d0b4" />
+              <ellipse cx="54" cy="22" rx="10" ry="11" fill="#b0a090" />
+              <rect x="44" y="31" width="20" height="15" fill="#b0a090" />
+              <text x="5" y="60" font-family="monospace" font-size="7.5" fill="#6a5030" opacity=".82">what are
+                you</text>
+              <text x="5" y="71" font-family="monospace" font-size="7.5" fill="#6a5030" opacity=".82">looking
+                for?</text>
+              <line x1="4" y1="55" x2="104" y2="52" stroke="#8a7050" stroke-width=".5" opacity=".3" />
+            </svg>
+          </div>
+        </div>
+        <div class="glow" style="background:radial-gradient(ellipse,rgba(210,185,140,.2),transparent 70%);"></div>
+        <div class="plaque">COCO CAPITÁN</div>
+      </div>
+
+      <!-- Valheria Rocha — coral frame -->
+      <div class="painting" style="top:165px;right:204px;width:110px;height:102px;" data-modal="valheria">
+        <div class="frame" style="background:linear-gradient(135deg,#b03040,#802030,#b03040);padding:9px;">
+          <div class="canvas-art" style="background:#fff0e8;">
+            <svg viewBox="0 0 92 84" width="100%" height="100%">
+              <rect width="92" height="84" fill="#fff0e8" />
+              <circle cx="46" cy="42" r="29" fill="#ff6040" opacity=".8" />
+              <circle cx="46" cy="42" r="21" fill="#0060ff" opacity=".6" />
+              <circle cx="46" cy="42" r="13" fill="#ff9020" opacity=".9" />
+              <rect x="7" y="7" width="15" height="15" fill="#ff2060" opacity=".7" />
+              <rect x="70" y="62" width="13" height="13" fill="#00d0a0" opacity=".7" />
+              <circle cx="15" cy="68" r="7" fill="#ffee20" opacity=".8" />
+              <circle cx="77" cy="17" r="6" fill="#c020ff" opacity=".7" />
+              <polyline points="0,50 10,41 20,50 30,41 40,50" stroke="#ff6040" stroke-width="2" fill="none"
+                opacity=".55" />
+              <polyline points="52,34 62,25 72,34 82,25 92,34" stroke="#0060ff" stroke-width="2" fill="none"
+                opacity=".55" />
+            </svg>
+          </div>
+        </div>
+        <div class="glow" style="background:radial-gradient(ellipse,rgba(220,155,135,.2),transparent 70%);"></div>
+        <div class="plaque">VALHERIA ROCHA</div>
+      </div>
+
+      <!-- ══ MUSIC POSTERS (right wall) ══ -->
+
+      <!-- BLACKPINK -->
+      <div class="poster" style="top:28px;right:72px;width:84px;height:118px;" data-modal="blackpink">
+        <div class="poster-inner" style="background:linear-gradient(135deg,#1a0a16,#2c1024);border:3px solid #c04080;">
+          <div style="font-family:'Press Start 2P',monospace;font-size:.28rem;color:#e6a0b9;letter-spacing:.05em;">BP
+          </div>
+          <div style="font-size:22px;">💗</div>
+          <div style="font-size:9px;letter-spacing:2px;">🌸🌸</div>
+          <div style="font-family:'Press Start 2P',monospace;font-size:.19rem;color:#e6a0b9;opacity:.75;">BLACKPINK
+          </div>
+          <div style="font-family:'Press Start 2P',monospace;font-size:.17rem;color:rgba(230,160,185,.38);">in your area
+          </div>
+        </div>
+      </div>
+
+      <!-- G-Dragon -->
+      <div class="poster" style="top:172px;right:72px;width:72px;height:98px;" data-modal="gdragon">
+        <div class="poster-inner" style="background:linear-gradient(135deg,#0c0c1c,#1a1030);border:3px solid #b99be1;">
+          <div style="font-family:'Press Start 2P',monospace;font-size:.26rem;color:#ddd0f5;letter-spacing:.05em;">GD
+          </div>
+          <div style="font-size:20px;">⚡</div>
+          <div style="font-family:'Press Start 2P',monospace;font-size:.17rem;color:#b99be1;opacity:.8;">G-DRAGON</div>
+          <div style="font-family:'Press Start 2P',monospace;font-size:.15rem;color:rgba(185,155,225,.35);">kwon jiyong
+          </div>
+        </div>
+      </div>
+
+      <!-- ══ BOOKSHELF (click → bookshelf page) ══ -->
+      <a href="./bookshelf.html" id="bookshelf" style="text-decoration:none;color:inherit;display:block;">
+        <div class="shelf-frame"></div>
+        <!-- bookshelf hover hint -->
+        <div
+          style="position:absolute;bottom:-22px;left:0;right:0;text-align:center;font-family:'Press Start 2P',monospace;font-size:.2rem;color:rgba(240,232,216,.22);letter-spacing:.08em;pointer-events:none;white-space:nowrap;">
+          click to browse →</div>
+        <div
+          style="position:absolute;inset:-6px;background:radial-gradient(ellipse,rgba(255,190,60,.06),transparent 70%);opacity:0;transition:opacity .3s;pointer-events:none;"
+          class="shelf-hover-glow"></div>
+        <div class="shelf-plank"></div>
+        <div class="shelf-plank"></div>
+        <div class="shelf-plank"></div>
+
+        <!-- Row 1 (top) -->
+        <div class="shelf-row" style="top:14px;bottom:auto;height:76px;">
+          <div class="pbook" style="width:26px;height:72px;background:linear-gradient(to right,#1e3c18,#2d5422);">
+            <div class="pbook-spine">Bulletproof</div>
+          </div>
+          <div class="pbook" style="width:24px;height:64px;background:linear-gradient(to right,#122038,#1c3050);">
+            <div class="pbook-spine">How Bad</div>
+          </div>
+          <div class="ghost-book" style="width:20px;height:60px;background:#2a1e12;"></div>
+          <div class="ghost-book" style="width:27px;height:68px;background:#201a10;"></div>
+          <div class="ghost-book" style="width:17px;height:56px;background:#1a1610;"></div>
+          <div class="ghost-book" style="width:23px;height:64px;background:#221c14;"></div>
+          <div style="margin-left:auto;display:flex;flex-direction:column;align-items:center;padding-bottom:0;">
+            <span style="font-size:19px;line-height:1;">🌿</span>
+            <div
+              style="width:13px;height:11px;background:radial-gradient(#5c3820,#3a2010);border-radius:2px 2px 4px 4px;">
+            </div>
+          </div>
+        </div>
+
+        <!-- Row 2 (middle) -->
+        <div class="shelf-row" style="top:103px;height:76px;">
+          <div class="ghost-book"
+            style="width:22px;height:70px;background:linear-gradient(to right,#4a1020,#7a1830);opacity:.7;"></div>
+          <div class="ghost-book"
+            style="width:27px;height:62px;background:linear-gradient(to right,#103040,#184860);opacity:.7;"></div>
+          <div class="ghost-book"
+            style="width:19px;height:68px;background:linear-gradient(to right,#302010,#504030);opacity:.55;"></div>
+          <div class="ghost-book"
+            style="width:24px;height:65px;background:linear-gradient(to right,#182838,#203040);opacity:.65;"></div>
+          <div class="ghost-book"
+            style="width:21px;height:58px;background:linear-gradient(to right,#183820,#225030);opacity:.55;"></div>
+          <div class="ghost-book"
+            style="width:28px;height:72px;background:linear-gradient(to right,#381818,#502020);opacity:.6;"></div>
+          <!-- candle -->
+          <div class="shelf-candle" style="margin-left:auto;padding-bottom:1px;">
+            <div class="candle-flame"></div>
+            <div class="candle-body"></div>
+            <div class="candle-wax"></div>
+          </div>
+        </div>
+
+        <!-- Row 3 (lower) -->
+        <div class="shelf-row" style="top:206px;height:76px;">
+          <div class="ghost-book"
+            style="width:24px;height:68px;background:linear-gradient(to right,#3a2a18,#5a4028);opacity:.6;"></div>
+          <div class="ghost-book"
+            style="width:20px;height:72px;background:linear-gradient(to right,#1a2a1a,#2a4028);opacity:.55;"></div>
+          <div class="ghost-book"
+            style="width:26px;height:62px;background:linear-gradient(to right,#2a1a3a,#3a2050);opacity:.6;"></div>
+          <div class="ghost-book"
+            style="width:19px;height:66px;background:linear-gradient(to right,#3a2810,#503820);opacity:.5;"></div>
+          <div class="ghost-book"
+            style="width:23px;height:70px;background:linear-gradient(to right,#102030,#183040);opacity:.6;"></div>
+          <div style="margin-left:auto;font-size:19px;line-height:1;padding-bottom:2px;" title="lil trophy">🏆</div>
+        </div>
+      </a>
+
+      <!-- ══ FLOOR LAMP ══ -->
+      <div id="lamp">
+        <div class="lamp-halo"></div>
+        <div class="lamp-shade"></div>
+        <div class="lamp-pole"></div>
+        <div class="lamp-base"></div>
+      </div>
+
+      <!-- ══ SOFA ══ -->
+      <div id="sofa">
+        <div class="sofa-back">
+          <div class="sofa-pillow" style="left:18px;background:linear-gradient(135deg,#c07248,#9a5228);"></div>
+          <div class="sofa-pillow" style="right:18px;background:linear-gradient(135deg,#4a8a6a,#2a6a4a);"></div>
+        </div>
+        <div class="sofa-seat">
+          <div class="sofa-arm l"></div>
+          <div class="sofa-arm r"></div>
+          <div class="sofa-leg l"></div>
+          <div class="sofa-leg r"></div>
+        </div>
+      </div>
+
+      <!-- cat on sofa -->
+      <div class="cat cat-sofa">😸</div>
+
+      <!-- ══ RUG ══ -->
+      <div id="rug"></div>
+
+      <!-- ══ COFFEE TABLE ══ -->
+      <div id="coffee-table">
+        <div class="table-items">
+          <div class="citem" data-modal="coffee" style="position:relative;">
+            <div class="steam">~</div>
+            <span class="ico">☕</span>
+            <span class="clabel">espresso</span>
+          </div>
+          <!-- receipt book → food diary -->
+          <a href="./food.html" id="receipt-book" title="open food diary"
+            style="display:flex;flex-direction:column;align-items:center;text-decoration:none;cursor:pointer;transition:transform .2s;flex-shrink:0;">
+            <div style="position:relative;width:36px;height:46px;">
+              <!-- book body -->
+              <div
+                style="position:absolute;inset:0;background:linear-gradient(160deg,#d4a860,#b8884a);box-shadow:2px 3px 0 #7a5020;">
+              </div>
+              <!-- spine -->
+              <div
+                style="position:absolute;top:0;left:0;width:5px;height:100%;background:linear-gradient(to right,#8a5820,#b8844a);">
+              </div>
+              <!-- pages edge -->
+              <div
+                style="position:absolute;top:2px;right:-3px;width:3px;height:42px;background:repeating-linear-gradient(0deg,#f0e8d8 0px,#f0e8d8 2px,#d8cfc0 2px,#d8cfc0 4px);">
+              </div>
+              <!-- title on cover -->
+              <div
+                style="position:absolute;top:7px;left:8px;right:4px;font-family:'Caveat',cursive;font-size:6px;color:rgba(255,240,200,.7);line-height:1.3;letter-spacing:.03em;">
+                food<br>diary</div>
+              <!-- small receipt peek -->
+              <div
+                style="position:absolute;top:-6px;left:8px;width:18px;height:8px;background:#f8f2e4;transform:rotate(-3deg);box-shadow:0 1px 3px rgba(0,0,0,.3);">
+              </div>
+              <!-- hover glow -->
+              <div id="receipt-glow"
+                style="position:absolute;inset:-6px;background:radial-gradient(ellipse,rgba(255,190,80,.18),transparent 70%);opacity:0;transition:opacity .2s;pointer-events:none;">
+              </div>
+            </div>
+            <span
+              style="font-family:'Press Start 2P',monospace;font-size:.17rem;color:rgba(240,232,216,.3);margin-top:4px;white-space:nowrap;">receipt
+              book</span>
+          </a>
+        </div>
+      </div>
+
+      <!-- cats on floor -->
+      <div class="cat cat-floor1">🐱</div>
+      <div class="cat cat-floor2" style="transform:scaleX(-1);">😺</div>
+
+      <!-- mini robots -->
+      <div class="robot" style="top:650px;left:440px;">🤖</div>
+      <div class="robot robot2" style="top:668px;left:510px;">🤖</div>
+
+      <!-- ══ MUSIC CORNER ══ -->
+      <div id="music-corner">
+        <!-- turntable (playing Olivia Rodrigo) -->
+        <div class="turntable-unit" data-modal="olivia" style="cursor:pointer;">
+          <div class="tt-platter">
+            <div class="tt-label"></div>
+          </div>
+          <div class="tt-arm"></div>
+          <div
+            style="position:absolute;top:5px;right:6px;font-family:'Press Start 2P',monospace;font-size:.18rem;color:rgba(220,200,255,.35);writing-mode:vertical-lr;letter-spacing:.04em;">
+            GUTS</div>
+        </div>
+        <div class="music-desk-top"></div>
+        <div class="music-desk-body">
+          <div class="speaker">
+            <div class="speaker-cone"></div>
+            <div class="speaker-led"></div>
+          </div>
+          <div class="vinyl-stack">
+            <div class="vinyl-disc" data-modal="blackpink"></div>
+            <div class="vinyl-disc" data-modal="gdragon"></div>
+            <div class="vinyl-disc" data-modal="olivia"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══ UPPER KITCHEN CABINETS ══ -->
+      <div id="upper-cabinets">
+        <div class="ucab-body">
+          <div class="ucab-door">
+            <div class="ucab-handle"></div>
+          </div>
+          <div class="ucab-door ucab-glass" data-modal="kitchen">🍝🥐🌶️</div>
+          <div class="ucab-door">
+            <div class="ucab-handle"></div>
+          </div>
+          <div class="ucab-door">
+            <div class="ucab-handle"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══ KITCHEN COUNTER ══ -->
+      <div id="kitchen">
+        <div class="counter-surface"></div>
+        <div class="counter-body">
+          <div class="cab-door">
+            <div class="cab-handle"></div>
+          </div>
+          <div class="cab-door">
+            <div class="cab-handle"></div>
+          </div>
+          <div class="cab-door">
+            <div class="cab-handle"></div>
+          </div>
+          <div class="cab-door">
+            <div class="cab-handle"></div>
+          </div>
+        </div>
+        <div class="counter-items">
+          <div class="citem" data-modal="coffee">
+            <div class="steam">~</div>
+            <span class="ico">☕</span>
+            <span class="clabel">coffee</span>
+          </div>
+          <!-- christmas tree from coffee beans -->
+          <div class="citem" data-modal="coffee">
+            <span class="ico" style="filter:sepia(1) hue-rotate(8deg) saturate(1.4) brightness(.62);">🎄</span>
+            <span class="clabel">bean tree</span>
+          </div>
+          <div class="citem" data-modal="food-carbonara">
+            <span class="ico">🍝</span>
+            <span class="clabel">carbonara</span>
+          </div>
+          <div class="citem" data-modal="food-ramen">
+            <span class="ico">🍜</span>
+            <span class="clabel">tonkotsu</span>
+          </div>
+          <div class="citem" data-modal="food-croissant">
+            <span class="ico">🥐</span>
+            <span class="clabel">croissant</span>
+          </div>
+          <!-- little coffee-bean jar -->
+          <div class="citem" data-modal="coffee" style="align-self:flex-end;">
+            <div
+              style="width:20px;height:26px;background:linear-gradient(to bottom,rgba(160,115,65,.28),rgba(100,65,30,.38));border:1.5px solid rgba(165,120,70,.45);position:relative;">
+              <div style="position:absolute;bottom:0;left:0;right:0;height:55%;background:rgba(50,22,6,.45);"></div>
+              <div
+                style="position:absolute;top:-3px;left:50%;transform:translateX(-50%);width:12px;height:3px;background:rgba(165,120,70,.4);">
+              </div>
+            </div>
+            <span class="clabel">beans</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══ BATHROOM ══ -->
+      <div id="bathroom">
+        <div class="bath-interior">
+          <div class="bath-tiles"></div>
+          <div class="bath-shelf"></div>
+          <div class="bath-products">
+            <!-- shampoo -->
+            <div class="bottle" data-modal="bathroom">
+              <div class="btop" style="background:#3a78a0;"></div>
+              <div class="bbody" style="height:26px;background:linear-gradient(135deg,#4a8ab0,#2a608a);"></div>
+            </div>
+            <!-- shower gel -->
+            <div class="bottle" data-modal="bathroom">
+              <div class="btop" style="background:#6a4a9a;"></div>
+              <div class="bbody" style="height:21px;background:linear-gradient(135deg,#8a6ab0,#4a2a7a);"></div>
+            </div>
+            <!-- perfume -->
+            <div class="bottle" data-modal="bathroom" style="gap:0;">
+              <div style="width:5px;height:3px;background:#c89820;margin:0 auto;"></div>
+              <div style="width:7px;height:5px;background:#b08010;margin:0 auto;"></div>
+              <div
+                style="width:13px;height:17px;background:linear-gradient(135deg,rgba(255,200,80,.28),rgba(190,140,40,.38));border:1px solid rgba(255,200,80,.38);margin:0 auto;">
+              </div>
+            </div>
+            <!-- body lotion -->
+            <div class="bottle" data-modal="bathroom">
+              <div class="btop" style="width:5px;height:5px;background:#a04870;"></div>
+              <div class="bbody" style="height:23px;background:linear-gradient(135deg,#c06090,#803050);"></div>
+            </div>
+          </div>
+          <div style="position:absolute;bottom:28px;left:6px;font-size:12px;opacity:.35;">🪴</div>
+        </div>
+        <div class="bath-doorframe">
+          <div class="bath-door">
+            <div class="bath-knob"></div>
+          </div>
+        </div>
+        <div class="bath-sign">bathroom</div>
+      </div>
+
+    </div><!-- /room -->
+  </div><!-- /scene-wrap -->
+
+  <!-- ══ MODAL ══ -->
+  <div id="modal">
+    <div id="modal-bg"></div>
+    <div id="modal-panel">
+      <button id="modal-close">✕</button>
+      <div class="m-eyebrow" id="m-eyebrow"></div>
+      <div class="m-title" id="m-title"></div>
+      <div class="m-sub" id="m-sub"></div>
+      <div class="m-rule" id="m-rule"></div>
+      <div class="m-note" id="m-note"></div>
+      <div class="m-tags" id="m-tags"></div>
+    </div>
+  </div>
+
+  <script>
+    /* ── Starfield ── */
+    (function () {
+      const c = document.getElementById('starfield'), ctx = c.getContext('2d');
+      let W, H, S = [];
+      function resize() { W = c.width = window.innerWidth; H = c.height = window.innerHeight; }
+      function mkS() { S = Array.from({ length: 180 }, () => ({ x: Math.random() * W, y: Math.random() * H, r: Math.random() * .9 + .1, a: Math.random() * .4 + .05, da: (Math.random() * .002 + .0006) * (Math.random() < .5 ? 1 : -1) })); }
+      function draw() { ctx.clearRect(0, 0, W, H); S.forEach(s => { s.a = Math.max(.03, Math.min(.5, s.a + s.da)); if (s.a >= .5 || s.a <= .03) s.da *= -1; ctx.beginPath(); ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2); ctx.fillStyle = `rgba(220,210,240,${s.a})`; ctx.fill(); }); requestAnimationFrame(draw); }
+      resize(); mkS(); draw();
+      window.addEventListener('resize', () => { resize(); mkS(); });
+    })();
+
+    /* ── Scale room to viewport ── */
+    function scaleRoom() {
+      const r = document.getElementById('room'), w = document.getElementById('scene-wrap');
+      const s = Math.min(w.clientWidth / 1200, w.clientHeight / 900);
+      r.style.transform = `scale(${s})`;
+    }
+    scaleRoom();
+    window.addEventListener('resize', scaleRoom);
+
+    /* ── Modal data ── */
+    const DATA = {
+      thiebaud: {
+        eyebrow: 'Painting · USA · 1920–2021', title: 'Wayne Thiebaud', sub: 'painter · candy realist · pop', accent: '#dcc36e',
+        note: 'He painted pie slices with the same gravity Rembrandt gave to faces. That insistence — that the mundane deserves baroque seriousness — is its own philosophy. If something brings you pleasure, paint it as if it matters completely.',
+        tags: ['candy palette', 'pop art', 'thick impasto', 'food as subject']
+      },
+      hana: {
+        eyebrow: 'Painting · Korea · b. 2003', title: 'Hana Choi', sub: 'painter · @ssneuron · surrealist', accent: '#94cdb4',
+        note: 'Oil on linen, figures dissolving into their own reflections — she\'s painting the exact texture of the unconscious, in sage and bone white. Mirror, No Exit (2025) is the kind of work that stays in you quietly for weeks.',
+        tags: ['surrealism', 'oil on linen', 'Freudian', 'analog + digital']
+      },
+      coco: {
+        eyebrow: 'Photography · Spain', title: 'Coco Capitán', sub: 'photographer · writer · artist', accent: '#d2b98c',
+        note: 'She writes directly onto photographs — a dry joke, a half-finished thought, a question that knows it won\'t be answered. What moves me is how her work refuses to choose between art and documentary; it just sits there, candid and slightly wry, like something a smart friend says at the wrong moment that turns out to be the most true thing in the room.',
+        tags: ['handwritten text', 'dry wit', 'documentary candor', 'poetry']
+      },
+      valheria: {
+        eyebrow: 'Illustration · Brazil', title: 'Valheria Rocha', sub: 'illustrator · maximalist · pop', accent: '#dc9b87',
+        note: 'Coral and electric blue should clash — she makes them kiss. Her color confidence is something I actively study. Joyful without naivety, saturated without noise — Brazilian maximalism refined to a point.',
+        tags: ['illustration', 'maximalism', 'vibrant palette', 'pop culture']
+      },
+      blackpink: {
+        eyebrow: 'Music · Visual Identity · Korea', title: 'BLACKPINK', sub: 'Jennie · Lisa · Rosé · Jisoo', accent: '#e6a0b9',
+        note: 'Four entirely distinct aesthetics that somehow resolve into one immaculate visual identity. What strikes me is the precision — every frame, every styling choice, is considered without appearing considered. They\'re a four-person argument about beauty that somehow wins unanimously.',
+        tags: ['visual identity', 'precision styling', 'K-pop', 'fashion', 'four aesthetics as one']
+      },
+      gdragon: {
+        eyebrow: 'Music · Fashion · Korea', title: 'G-Dragon', sub: 'musician · fashion auteur · BIGBANG', accent: '#b99be1',
+        note: 'GD doesn\'t wear clothes — he writes visual manifestos. Every look is a citation from Vivienne Westwood, Warhol, Japanese street, and haute couture, all in one sentence. He proved that chaos and luxury can share the same breath.',
+        tags: ['avant-garde', 'self-direction', 'streetwear', 'luxury']
+      },
+      olivia: {
+        eyebrow: 'Music · Songwriting · USA', title: 'Olivia Rodrigo', sub: 'singer-songwriter · gen-z bard', accent: '#af9bd7',
+        note: 'She writes heartbreak with the specificity of a forensic report and the drama of opera — "and I hate that I can\'t hate you for trying." A line like that takes craft and courage both. Her purple-grunge world isn\'t visual branding; it\'s emotional shorthand. She proved that young and earnest can be a complete artistic argument.',
+        tags: ['songwriting', 'emotional precision', 'grunge-pop', 'nostalgia', 'purple world']
+      },
+      book0: {
+        eyebrow: 'Psychology · Resilience · 2020', title: 'Becoming Bulletproof', sub: 'Evy Poumpouras', accent: '#4a7a35',
+        note: 'Evy Poumpouras spent years protecting heads of state — reading rooms, controlling panic, deciding how to respond rather than react. What stayed with me isn\'t the tactics; it\'s the idea that confidence is a choice before it\'s a feeling. She calls it being \'bulletproof\': not invincible, but so prepared that fear becomes just another piece of information. I think about it before talks, interviews, any moment that feels larger than I am.',
+        tags: ['confidence', 'psychology', 'presence', 'resilience', 'decision-making']
+      },
+      book1: {
+        eyebrow: 'Sports Psychology · 2015', title: 'How Bad Do You Want It?', sub: 'Matt Fitzgerald', accent: '#3a6090',
+        note: 'Fitzgerald builds the case that endurance is psychobiological — the brain limits performance before the body fails, always. The ceiling is in your head, and it moves every time you push past what you thought was the edge. I read this during a stretch where the research wasn\'t working, rejection after rejection. It gave me a frame: the discomfort of not knowing is the whole point.',
+        tags: ['endurance', 'mental toughness', 'psychobiology', 'performance', 'willpower']
+      },
+      coffee: {
+        eyebrow: 'Kitchen · Daily Ritual', title: 'Coffee & the Room', sub: 'the little joys', accent: '#c8943c',
+        note: 'A coffee mug, always. Espresso first, pour-over when there\'s time. On the counter: a tiny christmas tree sculpted entirely from coffee beans — it smells like the best mornings and refuses to be moved. The kitchen is where ideas get unstuck.',
+        tags: ['espresso', 'pour-over', 'coffee beans', 'morning ritual', 'christmas tree']
+      },
+      'food-carbonara': {
+        eyebrow: 'Food Diary · No. 01 · Rome, Italy', title: 'Spaghetti Carbonara', sub: 'cucina romana · Italy', accent: '#e05030',
+        note: 'The rule is simple: no cream. Ever. I learned this the hard way after years of well-meaning additions. The real thing — just eggs, pecorino, guanciale, black pepper, and patient stirring over residual heat — is one of those recipes that rewards honesty.',
+        tags: ['guanciale', 'pecorino', 'eggs', 'no cream!']
+      },
+      'food-ramen': {
+        eyebrow: 'Food Diary · No. 06 · Fukuoka, Japan', title: 'Tonkotsu Ramen', sub: 'hakata style · Japan', accent: '#ee7020',
+        note: 'A midnight bowl in Fukuoka, cloudy and impossibly rich, chashu that barely held together. The counter had twelve seats, all taken. It was raining outside. I\'ve been chasing that exact bowl ever since, across a dozen cities. I never quite find it. Maybe that\'s the point.',
+        tags: ['tonkotsu', 'chashu', 'soft egg', 'thin noodles']
+      },
+      'food-croissant': {
+        eyebrow: 'Food Diary · No. 09 · Paris, France', title: 'Le Croissant', sub: 'viennoiserie · France', accent: '#d4b800',
+        note: 'A real croissant — the kind that shatters when you bite it, that leaves crumbs on your jacket, that tastes only of butter — eaten on a park bench in Paris in September with the light doing that particular thing it does in autumn. I have tried to replicate this. The bench was the ingredient I was missing.',
+        tags: ['laminated dough', 'cultured butter', 'patience', 'a good bench']
+      },
+      kitchen: {
+        eyebrow: 'Food Diary · Collection', title: 'Dishes & Memories', sub: 'food that left a mark', accent: '#c8943c',
+        note: 'Rome, Naples, Paris, Fukuoka, Taipei — every city has a dish that becomes a memory. Carbonara without cream. Pizza blistered in a wood oven. A midnight ramen counter with twelve seats in the rain. A croissant on a Paris bench in September.',
+        tags: ['carbonara', 'pizza napoletana', 'tonkotsu', 'croissant', 'onion soup']
+      },
+      bathroom: {
+        eyebrow: 'Bathroom · Favorites', title: 'Products I Love', sub: 'from shower to fragrance', accent: '#4a8ab0',
+        note: 'The bathroom is where the day starts and ends. A good shampoo, a shower gel that doesn\'t smell like everyone else\'s apartment, and a fragrance that became a signature without meaning to. These small rituals are what make a space feel like yours rather than just somewhere you sleep.',
+        tags: ['hair care', 'shower gel', 'fragrance', 'body lotion', 'morning ritual']
+      }
+    };
+
+    /* ── Open / close modal ── */
+    const modal = document.getElementById('modal');
+    function openModal(key) {
+      const d = DATA[key]; if (!d) return;
+      document.getElementById('m-eyebrow').textContent = d.eyebrow;
+      document.getElementById('m-eyebrow').style.color = d.accent;
+      document.getElementById('m-title').textContent = d.title;
+      document.getElementById('m-sub').textContent = d.sub;
+      document.getElementById('m-note').textContent = d.note;
+      document.getElementById('m-rule').style.background = d.accent;
+      document.getElementById('m-tags').innerHTML = d.tags.map(t => `<span>${t}</span>`).join('<span style="opacity:.28"> · </span>');
+      modal.classList.add('open');
+      document.body.style.overflow = 'hidden';
+    }
+    function closeModal() { modal.classList.remove('open'); document.body.style.overflow = ''; }
+
+    document.getElementById('modal-bg').addEventListener('click', closeModal);
+    document.getElementById('modal-close').addEventListener('click', closeModal);
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+
+    /* attach modal handlers */
+    document.querySelectorAll('[data-modal]').forEach(el => {
+      el.style.cursor = 'pointer';
+      el.addEventListener('click', e => { e.stopPropagation(); openModal(el.dataset.modal); });
+    });
+
+    /* receipt book hover glow */
+    const rb = document.getElementById('receipt-book');
+    if (rb) {
+      const rg = document.getElementById('receipt-glow');
+      rb.addEventListener('mouseenter', () => { rb.style.transform = 'translateY(-6px)'; if (rg) rg.style.opacity = '1'; });
+      rb.addEventListener('mouseleave', () => { rb.style.transform = ''; if (rg) rg.style.opacity = '0'; });
+    }
+
+    /* bookshelf hover glow */
+    const bsEl = document.getElementById('bookshelf');
+    if (bsEl) {
+      const bg = bsEl.querySelector('.shelf-hover-glow');
+      bsEl.addEventListener('mouseenter', () => { if (bg) bg.style.opacity = '1'; });
+      bsEl.addEventListener('mouseleave', () => { if (bg) bg.style.opacity = '0'; });
+    }
+  </script>
+</body>
+
+</html>

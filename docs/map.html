@@ -1,0 +1,439 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>My World Map — Linning Xu</title>
+  <script src="https://d3js.org/d3.v7.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/topojson@3/dist/topojson.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: #060c18;
+      color: #f3f6fa;
+      font-family: 'Inter', -apple-system, sans-serif;
+      overflow: hidden;
+      height: 100vh; width: 100vw;
+    }
+
+    #starfield {
+      position: fixed; top: 0; left: 0;
+      width: 100vw; height: 100vh;
+      z-index: 0; pointer-events: none;
+    }
+
+    .back-btn {
+      position: fixed; top: 1.25rem; left: 1.25rem;
+      z-index: 100; color: #7eb8f7; text-decoration: none;
+      font-family: 'JetBrains Mono', monospace; font-size: 0.78rem;
+      border: 1px solid rgba(126,184,247,0.35); padding: 6px 14px;
+      border-radius: 20px; background: rgba(6,12,24,0.8);
+      backdrop-filter: blur(10px); transition: all 0.18s;
+    }
+    .back-btn:hover { background: rgba(126,184,247,0.12); border-color: rgba(126,184,247,0.7); }
+
+    .page-header {
+      position: fixed; top: 1rem; left: 50%; transform: translateX(-50%);
+      z-index: 100; text-align: center; pointer-events: none; white-space: nowrap;
+    }
+    .page-header h1 { font-size: 1.25rem; font-weight: 700; color: #fff; letter-spacing: -0.3px; }
+    .page-header .sub {
+      font-size: 0.72rem; color: #7eb8f7;
+      font-family: 'JetBrains Mono', monospace; margin-top: 3px;
+    }
+
+    .stats-badge {
+      position: fixed; bottom: 1.5rem; left: 50%; transform: translateX(-50%);
+      z-index: 100; background: rgba(6,12,24,0.85); backdrop-filter: blur(12px);
+      border: 1px solid rgba(255,255,255,0.1); border-radius: 24px;
+      padding: 7px 20px; font-family: 'JetBrains Mono', monospace;
+      font-size: 0.77rem; color: #b8c6e0; white-space: nowrap;
+    }
+    .stats-badge .hi  { color: #FFD93D; font-weight: 700; }
+    .stats-badge .dim { color: #3a5070; margin-left: 10px; }
+
+    #map-container { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 10; }
+    #map { width: 100%; height: 100%; cursor: grab; }
+    #map:active { cursor: grabbing; }
+
+    /* ── Map geography ── */
+    .sphere   { fill: #07101f; }
+    .graticule{ fill: none; stroke: #0d1e35; stroke-width: 0.5px; }
+    .borders  { fill: none; stroke: rgba(255,255,255,0.08); stroke-width: 0.5px; }
+    .country  { stroke: rgba(255,255,255,0.06); stroke-width: 0.4px; transition: filter 0.15s; }
+    .unvisited{ fill: #0e1a2e; }
+    .unvisited:hover { fill: #172540; }
+
+    /* ── City dots ── */
+    .city-dot {
+      stroke: rgba(6,12,24,0.6); stroke-width: 1px;
+      cursor: pointer; transition: r 0.15s, opacity 0.15s;
+    }
+    .city-dot:hover { stroke-width: 1.5px; }
+
+    .city-label {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 8.5px;
+      pointer-events: none;
+      paint-order: stroke fill;
+      stroke: #060c18; stroke-width: 2.5px;
+      transition: opacity 0.3s;
+    }
+
+    /* ── Tooltip ── */
+    #tooltip {
+      position: fixed; z-index: 200; pointer-events: none;
+      background: rgba(6,12,24,0.95); border: 1px solid rgba(255,255,255,0.13);
+      border-radius: 10px; padding: 9px 15px;
+      font-family: 'Inter', sans-serif; font-size: 0.83rem; color: #f3f6fa;
+      white-space: nowrap; backdrop-filter: blur(12px); display: none;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.6); line-height: 1.5;
+    }
+    .tt-row  { display: flex; align-items: center; gap: 8px; }
+    .tt-flag { font-size: 1.1rem; }
+    .tt-name { font-weight: 600; }
+    .tt-city { font-size: 0.68rem; font-family: 'JetBrains Mono', monospace; margin-top: 2px; opacity: 0.6; }
+    .tt-tag  { font-size: 0.68rem; font-family: 'JetBrains Mono', monospace; margin-top: 3px; }
+
+    /* ── Zoom controls ── */
+    .zoom-controls {
+      position: fixed; bottom: 1.5rem; right: 1.25rem;
+      z-index: 100; display: flex; flex-direction: column; gap: 4px;
+    }
+    .ctrl-btn {
+      width: 34px; height: 34px;
+      background: rgba(6,12,24,0.85); border: 1px solid rgba(255,255,255,0.13);
+      border-radius: 7px; color: #b8c6e0; font-size: 1rem; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      backdrop-filter: blur(10px); transition: all 0.15s; font-family: 'Inter', sans-serif;
+    }
+    .ctrl-btn:hover { background: rgba(126,184,247,0.14); border-color: rgba(126,184,247,0.5); color: #7eb8f7; }
+
+    /* ── Legend ── */
+    .legend {
+      position: fixed; bottom: 1.5rem; left: 1.25rem; z-index: 100;
+      display: flex; flex-direction: column; gap: 5px;
+      font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; color: #3a5070;
+    }
+    .legend-row { display: flex; align-items: center; gap: 7px; }
+    .legend-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+  </style>
+</head>
+<body>
+  <canvas id="starfield"></canvas>
+  <a href="./index.html" class="back-btn">← back</a>
+
+  <div class="page-header">
+    <h1>🌍 My World Map</h1>
+    <p class="sub">places i've wandered ✨</p>
+  </div>
+
+  <div class="stats-badge">
+    <span class="hi" id="count">—</span> countries &amp; territories visited
+    <span class="dim">scroll · drag · click</span>
+  </div>
+
+  <div class="legend">
+    <div class="legend-row"><div class="legend-dot" style="background:#FFD93D;box-shadow:0 0 5px #FFD93Daa"></div>visited</div>
+    <div class="legend-row"><div class="legend-dot" style="background:#0e1a2e;border:1px solid #1d2e4a"></div>not yet :)</div>
+    <div class="legend-row"><div class="legend-dot" style="background:#fff9e6;width:7px;height:7px;border:1px solid rgba(255,255,255,0.3)"></div>city</div>
+  </div>
+
+  <div class="zoom-controls">
+    <button class="ctrl-btn" id="zoom-in"  title="Zoom in">+</button>
+    <button class="ctrl-btn" id="zoom-out" title="Zoom out">−</button>
+    <button class="ctrl-btn" id="reset"    title="Reset" style="font-size:0.7rem;">⌂</button>
+  </div>
+
+  <div id="map-container"><svg id="map"></svg></div>
+  <div id="tooltip"></div>
+
+  <script>
+    // ── Starfield ────────────────────────────────────────────────
+    (function () {
+      const canvas = document.getElementById('starfield');
+      const ctx = canvas.getContext('2d');
+      let w = canvas.width = window.innerWidth;
+      let h = canvas.height = window.innerHeight;
+      window.addEventListener('resize', () => { w = canvas.width = window.innerWidth; h = canvas.height = window.innerHeight; });
+      const stars = Array.from({ length: 110 }, () => ({
+        x: Math.random() * w, y: Math.random() * h,
+        r: Math.random() * 1.1 + 0.3, d: Math.random() * 0.5 + 0.2,
+        tw: Math.random() * Math.PI * 2
+      }));
+      function draw() {
+        ctx.clearRect(0, 0, w, h);
+        for (const s of stars) {
+          ctx.save();
+          ctx.globalAlpha = 0.4 + 0.3 * Math.sin(s.tw);
+          ctx.beginPath(); ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+          ctx.fillStyle = '#fff'; ctx.shadowColor = '#fff'; ctx.shadowBlur = 5;
+          ctx.fill(); ctx.restore();
+          s.tw += s.d * 0.02;
+        }
+        requestAnimationFrame(draw);
+      }
+      draw();
+    })();
+
+    // ── Candy color palette per country ─────────────────────────
+    // ISO 3166-1 numeric → candy hex
+    const candyColors = {
+       36: "#FF85A1",   // Australia      — bubblegum pink
+       56: "#FFD93D",   // Belgium        — lemon drop
+      124: "#FF6B6B",   // Canada         — cherry red
+      156: "#FF9A3C",   // China          — tangerine
+      250: "#C77DFF",   // France         — grape
+      276: "#FFF176",   // Germany        — banana
+      376: "#4CC9F0",   // Israel         — cotton candy blue
+      380: "#FF6FAE",   // Italy          — raspberry
+      410: "#4ECDC4",   // South Korea    — mint teal
+      528: "#FF8C42",   // Netherlands    — orange sherbet
+      554: "#06D6A0",   // New Zealand    — spearmint
+      702: "#FF4D6D",   // Singapore      — strawberry
+      756: "#DA9FF9",   // Switzerland    — lavender
+      764: "#FFB347",   // Thailand       — mango
+      826: "#7B68EE",   // United Kingdom — periwinkle
+      840: "#5BC0EB",   // United States  — sky blue
+    };
+    const visitedIds = new Set(Object.keys(candyColors).map(Number));
+
+    const visitedMeta = {
+       36: { name: "Australia",      flag: "🇦🇺" },
+       56: { name: "Belgium",        flag: "🇧🇪" },
+      124: { name: "Canada",         flag: "🇨🇦" },
+      156: { name: "China",          flag: "🇨🇳" },
+      250: { name: "France",         flag: "🇫🇷" },
+      276: { name: "Germany",        flag: "🇩🇪" },
+      376: { name: "Israel",         flag: "🇮🇱" },
+      380: { name: "Italy",          flag: "🇮🇹" },
+      410: { name: "South Korea",    flag: "🇰🇷" },
+      528: { name: "Netherlands",    flag: "🇳🇱" },
+      554: { name: "New Zealand",    flag: "🇳🇿" },
+      702: { name: "Singapore",      flag: "🇸🇬" },
+      756: { name: "Switzerland",    flag: "🇨🇭" },
+      764: { name: "Thailand",       flag: "🇹🇭" },
+      826: { name: "United Kingdom", flag: "🇬🇧" },
+      840: { name: "United States",  flag: "🇺🇸" },
+    };
+
+    // ── City / territory markers ─────────────────────────────────
+    // color: dot fill; glow: drop-shadow color
+    const CHINA_COLOR  = "#FF9A3C";
+    const CITY_FILL    = "#fff9e6";
+    const CITY_GLOW    = "rgba(255,249,230,0.7)";
+
+    const cityMarkers = [
+      // Chinese cities
+      { name: "Beijing",   flag: "🇨🇳", coords: [116.407, 39.904], r: 3.5, capital: true  },
+      { name: "Tianjin",   flag: "🇨🇳", coords: [117.362, 39.343], r: 2.5 },
+      { name: "Shanghai",  flag: "🇨🇳", coords: [121.474, 31.230], r: 3.5, capital: true  },
+      { name: "Nanjing",   flag: "🇨🇳", coords: [118.797, 32.060], r: 2.5 },
+      { name: "Hangzhou",  flag: "🇨🇳", coords: [120.155, 30.274], r: 2.5 },
+      { name: "Ningbo",    flag: "🇨🇳", coords: [121.544, 29.868], r: 2.5 },
+      { name: "Xiamen",    flag: "🇨🇳", coords: [118.089, 24.480], r: 2.5 },
+      { name: "Guangzhou", flag: "🇨🇳", coords: [113.264, 23.129], r: 2.5 },
+      { name: "Shenzhen",  flag: "🇨🇳", coords: [114.058, 22.543], r: 2.5 },
+      { name: "Chengdu",   flag: "🇨🇳", coords: [104.067, 30.573], r: 2.5 },
+      { name: "Chongqing", flag: "🇨🇳", coords: [106.552, 29.563], r: 2.5 },
+      // Hong Kong SAR
+      { name: "Hong Kong", flag: "🇭🇰", coords: [114.169, 22.319], r: 3.5, capital: true  },
+    ];
+
+    // Name fallback for unvisited hover
+    const countryNames = {
+      4:"Afghanistan",8:"Albania",12:"Algeria",20:"Andorra",24:"Angola",
+      32:"Argentina",40:"Austria",50:"Bangladesh",64:"Bhutan",68:"Bolivia",
+      76:"Brazil",100:"Bulgaria",104:"Myanmar",108:"Burundi",116:"Cambodia",
+      120:"Cameroon",140:"Central African Republic",144:"Sri Lanka",148:"Chad",
+      152:"Chile",170:"Colombia",188:"Costa Rica",191:"Croatia",192:"Cuba",
+      196:"Cyprus",203:"Czech Republic",208:"Denmark",218:"Ecuador",818:"Egypt",
+      222:"El Salvador",231:"Ethiopia",246:"Finland",266:"Gabon",268:"Georgia",
+      288:"Ghana",300:"Greece",320:"Guatemala",332:"Haiti",340:"Honduras",
+      348:"Hungary",356:"India",360:"Indonesia",364:"Iran",368:"Iraq",
+      372:"Ireland",392:"Japan",400:"Jordan",398:"Kazakhstan",404:"Kenya",
+      408:"North Korea",414:"Kuwait",418:"Laos",422:"Lebanon",430:"Liberia",
+      434:"Libya",440:"Lithuania",442:"Luxembourg",450:"Madagascar",454:"Malawi",
+      458:"Malaysia",466:"Mali",484:"Mexico",496:"Mongolia",504:"Morocco",
+      508:"Mozambique",516:"Namibia",524:"Nepal",562:"Niger",566:"Nigeria",
+      578:"Norway",512:"Oman",586:"Pakistan",591:"Panama",598:"Papua New Guinea",
+      600:"Paraguay",604:"Peru",608:"Philippines",616:"Poland",620:"Portugal",
+      634:"Qatar",642:"Romania",643:"Russia",646:"Rwanda",682:"Saudi Arabia",
+      686:"Senegal",694:"Sierra Leone",703:"Slovakia",706:"Somalia",710:"South Africa",
+      716:"Zimbabwe",724:"Spain",729:"Sudan",740:"Suriname",752:"Sweden",
+      760:"Syria",762:"Tajikistan",788:"Tunisia",792:"Turkey",800:"Uganda",
+      804:"Ukraine",784:"UAE",858:"Uruguay",860:"Uzbekistan",862:"Venezuela",
+      704:"Vietnam",887:"Yemen",894:"Zambia",
+    };
+
+    // ── D3 setup ─────────────────────────────────────────────────
+    const svg = d3.select("#map");
+    let W = window.innerWidth, H = window.innerHeight;
+    svg.attr("width", W).attr("height", H);
+
+    const projection = d3.geoNaturalEarth1()
+      .scale(W / 6.3)
+      .translate([W / 2, H / 2]);
+
+    const path = d3.geoPath().projection(projection);
+    const g = svg.append("g");
+
+    g.append("path").datum({ type: "Sphere" }).attr("class","sphere").attr("d", path);
+    g.append("path").datum(d3.geoGraticule()()).attr("class","graticule").attr("d", path);
+
+    // ── Tooltip ───────────────────────────────────────────────────
+    const tip = d3.select("#tooltip");
+    function showTip(ev, html) {
+      tip.style("display","block").html(html);
+      moveTip(ev);
+    }
+    function moveTip(ev) {
+      const tw = tip.node().offsetWidth  || 140;
+      const th = tip.node().offsetHeight || 50;
+      tip.style("left", Math.min(ev.clientX + 14, W - tw - 16) + "px")
+         .style("top",  Math.min(ev.clientY - 14, H - th - 16) + "px");
+    }
+    function hideTip() { tip.style("display","none"); }
+
+    // ── Zoom ──────────────────────────────────────────────────────
+    let currentScale = 1;
+    const zoom = d3.zoom()
+      .scaleExtent([0.7, 16])
+      .on("zoom", event => {
+        g.attr("transform", event.transform);
+        const k = event.transform.k;
+        currentScale = k;
+        // Labels fade in only past zoom 3×, then stay constant screen size
+        const labelOpacity = Math.max(0, Math.min(1, (k - 3) / 1.5));
+        g.selectAll(".city-label")
+          .style("opacity", labelOpacity)
+          .style("font-size",    (6.5 / k) + "px")   // constant ~6.5px on screen
+          .style("stroke-width", (2.0 / k) + "px");  // constant outline
+        // Dots stay constant screen size
+        g.selectAll(".city-dot").attr("r", function() {
+          return +this.dataset.r / k;
+        });
+      });
+
+    svg.call(zoom);
+    svg.on("dblclick.zoom", null);
+    svg.on("dblclick", () => svg.transition().duration(500).call(zoom.transform, d3.zoomIdentity));
+    d3.select("#zoom-in") .on("click", () => svg.transition().duration(280).call(zoom.scaleBy, 1.6));
+    d3.select("#zoom-out").on("click", () => svg.transition().duration(280).call(zoom.scaleBy, 1/1.6));
+    d3.select("#reset")   .on("click", () => svg.transition().duration(500).call(zoom.transform, d3.zoomIdentity));
+
+    // ── Load world ────────────────────────────────────────────────
+    d3.json("https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json").then(world => {
+      const countries = topojson.feature(world, world.objects.countries);
+      const borders   = topojson.mesh(world, world.objects.countries, (a, b) => a !== b);
+
+      // Country fills
+      g.selectAll(".country")
+        .data(countries.features)
+        .enter().append("path")
+        .attr("class", d => "country " + (visitedIds.has(+d.id) ? "visited" : "unvisited"))
+        .attr("d", path)
+        .style("fill", d => candyColors[+d.id] || null)
+        .style("filter", d => {
+          const c = candyColors[+d.id];
+          return c ? `drop-shadow(0 0 7px ${c}bb)` : null;
+        })
+        .on("mousemove", function (ev, d) {
+          const id = +d.id;
+          const vm = visitedMeta[id];
+          const name = vm?.name || countryNames[id] || `Region ${id}`;
+          const flag = vm?.flag || "🌐";
+          showTip(ev,
+            `<div class="tt-row"><span class="tt-flag">${flag}</span><span class="tt-name">${name}</span></div>`
+            + (vm ? `<div class="tt-tag" style="color:${candyColors[id]}">✓ visited</div>` : "")
+          );
+        })
+        .on("mouseover", function (ev, d) {
+          const c = candyColors[+d.id];
+          if (c) d3.select(this).style("filter", `brightness(1.2) drop-shadow(0 0 14px ${c}ee)`);
+        })
+        .on("mouseleave", function (ev, d) {
+          const c = candyColors[+d.id];
+          if (c) d3.select(this).style("filter", `drop-shadow(0 0 7px ${c}bb)`);
+          else d3.select(this).style("fill", null);
+          hideTip();
+        })
+        .on("click", function (ev, d) {
+          const [[x0,y0],[x1,y1]] = path.bounds(d);
+          const dx = x1-x0 || 1, dy = y1-y0 || 1;
+          const scale = Math.min(8, 0.85 / Math.max(dx/W, dy/H));
+          svg.transition().duration(650).call(
+            zoom.transform,
+            d3.zoomIdentity.translate(W/2, H/2).scale(scale).translate(-(x0+x1)/2, -(y0+y1)/2)
+          );
+        });
+
+      // Borders
+      g.append("path").datum(borders).attr("class","borders").attr("d", path);
+
+      // City markers
+      const cityG = g.append("g").attr("class","city-group");
+
+      cityMarkers.forEach(city => {
+        const [cx, cy] = projection(city.coords);
+        if (cx == null || cy == null) return;
+
+        const dotColor = city.flag === "🇭🇰"
+          ? "#FFB6C1"   // soft pink for HK
+          : CITY_FILL;
+        const glowClr  = city.flag === "🇭🇰" ? "rgba(255,182,193,0.8)" : CITY_GLOW;
+
+        cityG.append("circle")
+          .attr("class", "city-dot")
+          .attr("cx", cx).attr("cy", cy)
+          .attr("r", city.r)
+          .attr("data-r", city.r)
+          .style("fill", dotColor)
+          .style("filter", `drop-shadow(0 0 3px ${glowClr})`)
+          .on("mousemove", ev => {
+            showTip(ev,
+              `<div class="tt-row"><span class="tt-flag">${city.flag}</span><span class="tt-name">${city.name}</span></div>`
+              + `<div class="tt-city">city · visited ✓</div>`
+            );
+          })
+          .on("mouseover", function() {
+            d3.select(this).style("filter", `brightness(1.3) drop-shadow(0 0 6px ${glowClr})`);
+          })
+          .on("mouseleave", function() {
+            d3.select(this).style("filter", `drop-shadow(0 0 3px ${glowClr})`);
+            hideTip();
+          });
+
+        // Label — hidden at world zoom, fades in when zoomed
+        cityG.append("text")
+          .attr("class", "city-label")
+          .attr("x", cx + city.r + 2)
+          .attr("y", cy + 3)
+          .style("fill", dotColor)
+          .style("opacity", 0)
+          .text(city.name);
+      });
+
+      // Count badge
+      document.getElementById("count").textContent =
+        visitedIds.size + cityMarkers.filter(c => c.flag === "🇭🇰").length;
+    });
+
+    // ── Resize ────────────────────────────────────────────────────
+    window.addEventListener("resize", () => {
+      W = window.innerWidth; H = window.innerHeight;
+      svg.attr("width", W).attr("height", H);
+      projection.scale(W / 6.3).translate([W / 2, H / 2]);
+      g.selectAll("path").attr("d", path);
+      cityMarkers.forEach(city => {
+        const [cx, cy] = projection(city.coords);
+        cityG?.selectAll(`.city-dot[data-name="${city.name}"]`).attr("cx", cx).attr("cy", cy);
+      });
+    });
+  </script>
+</body>
+</html>

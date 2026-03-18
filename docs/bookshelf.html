@@ -1,0 +1,627 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bookshelf — Linning Xu</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,600;1,300;1,400&family=DM+Sans:wght@300;400&family=Spectral:ital,wght@0,300;0,400;1,300;1,400&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0b0906;
+      --amber: rgba(255,190,90,0.06);
+      --shelf-brown: #3a2210;
+    }
+
+    body {
+      background: var(--bg);
+      min-height: 100vh;
+      color: #e8ddd0;
+      font-family: 'DM Sans', sans-serif;
+      overflow-x: hidden;
+    }
+
+    #starfield {
+      position: fixed; top: 0; left: 0;
+      width: 100vw; height: 100vh;
+      z-index: 0; pointer-events: none;
+    }
+
+    /* ── Ambient lamp glow ── */
+    .lamp-glow {
+      position: fixed; top: -120px; left: 50%;
+      transform: translateX(-50%);
+      width: 700px; height: 400px;
+      background: radial-gradient(ellipse at center top, rgba(255,185,80,0.08) 0%, transparent 70%);
+      pointer-events: none; z-index: 1;
+    }
+
+    /* ── Nav ── */
+    nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 300;
+      padding: 1.1rem 2rem;
+      display: flex; align-items: center; justify-content: space-between;
+      background: linear-gradient(to bottom, rgba(11,9,6,0.97) 55%, transparent);
+    }
+    .back-btn {
+      color: rgba(232,221,208,0.45);
+      text-decoration: none; font-size: 0.75rem;
+      font-weight: 300; letter-spacing: 0.14em; text-transform: uppercase;
+      transition: color 0.2s;
+    }
+    .back-btn:hover { color: rgba(232,221,208,0.85); }
+    .nav-title {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 1rem; font-weight: 300; font-style: italic;
+      color: rgba(232,221,208,0.4); letter-spacing: 0.04em;
+    }
+    .nav-count {
+      font-size: 0.72rem; font-weight: 300;
+      letter-spacing: 0.12em; text-transform: uppercase;
+      color: rgba(232,221,208,0.25);
+    }
+
+    /* ── Page header ── */
+    .page-header {
+      position: relative; z-index: 10;
+      text-align: center;
+      padding: 8.5rem 2rem 4rem;
+    }
+    .page-header .eyebrow {
+      font-size: 0.68rem; font-weight: 300;
+      letter-spacing: 0.22em; text-transform: uppercase;
+      color: rgba(232,221,208,0.25); margin-bottom: 1.2rem;
+    }
+    .page-header h1 {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: clamp(2.5rem, 5.5vw, 4rem);
+      font-weight: 300; font-style: italic;
+      color: #e8ddd0; letter-spacing: -0.01em; line-height: 1;
+      margin-bottom: 0.9rem;
+    }
+    .page-header .sub {
+      font-size: 0.78rem; font-weight: 300;
+      color: rgba(232,221,208,0.3); letter-spacing: 0.1em;
+    }
+
+    /* ── Shelf scene ── */
+    .shelf-scene {
+      position: relative; z-index: 10;
+      display: flex; justify-content: center;
+      padding: 0 2rem 6rem;
+      perspective: 1400px;
+      perspective-origin: 50% 30%;
+    }
+
+    .shelf-wrap {
+      width: 100%; max-width: 860px;
+    }
+
+    /* ── Shelf unit ── */
+    .shelf-unit {
+      position: relative;
+      transform-style: preserve-3d;
+    }
+
+    /* wood plank */
+    .shelf-plank {
+      position: relative;
+      display: flex; align-items: flex-end;
+      padding: 2rem 3rem 0;
+      background: linear-gradient(160deg, #5c3a1e 0%, #3e2510 35%, #281507 100%);
+      border-radius: 3px 3px 0 0;
+      box-shadow:
+        0 -1px 0 rgba(180,120,60,0.35),
+        0 12px 40px rgba(0,0,0,0.7),
+        inset 0 2px 8px rgba(255,190,80,0.07);
+      gap: 0;
+    }
+
+    /* front edge of shelf */
+    .shelf-plank::after {
+      content: '';
+      position: absolute;
+      bottom: -14px; left: 0; right: 0;
+      height: 14px;
+      background: linear-gradient(to bottom, #1e0e04, #110804);
+      border-radius: 0 0 2px 2px;
+      box-shadow: 0 6px 20px rgba(0,0,0,0.6);
+    }
+
+    /* ── Books ── */
+    .book {
+      --sw: 40px;   /* spine width */
+      --cw: 138px;  /* cover depth */
+      --bh: 215px;  /* height */
+
+      width: var(--sw);
+      height: var(--bh);
+      position: relative;
+      transform-style: preserve-3d;
+      transform: rotateY(-22deg);
+      transition: transform 0.45s cubic-bezier(.16,.84,.44,1), filter 0.3s;
+      cursor: pointer;
+      margin: 0 5px;
+      flex-shrink: 0;
+    }
+
+    .book:hover {
+      transform: rotateY(-30deg) translateY(-18px) translateZ(14px);
+      filter: drop-shadow(0 22px 32px rgba(0,0,0,0.65));
+      z-index: 10;
+    }
+
+    /* ── Book faces ── */
+    .f-spine {
+      position: absolute; inset: 0;
+      display: flex; align-items: center; justify-content: center;
+      overflow: hidden;
+    }
+
+    .f-spine .spine-title {
+      writing-mode: vertical-rl;
+      text-orientation: mixed;
+      transform: rotate(180deg);
+      font-family: 'Spectral', serif;
+      font-size: 0.72rem; font-weight: 400;
+      letter-spacing: 0.1em;
+      color: rgba(255,255,255,0.75);
+      line-height: 1;
+      padding: 10px 4px;
+      max-height: calc(var(--bh) - 20px);
+      overflow: hidden;
+      white-space: nowrap;
+    }
+
+    /* subtle light reflection on spine */
+    .f-spine::after {
+      content: '';
+      position: absolute; top: 0; left: 0;
+      width: 40%; height: 100%;
+      background: linear-gradient(to right, rgba(255,255,255,0.08), transparent);
+      pointer-events: none;
+    }
+
+    .f-cover {
+      position: absolute;
+      top: 0; left: var(--sw);
+      width: var(--cw); height: var(--bh);
+      transform-origin: left center;
+      transform: rotateY(90deg);
+      display: flex; align-items: center; justify-content: center;
+      overflow: hidden;
+    }
+
+    .f-pages {
+      position: absolute;
+      top: 0; left: 0;
+      width: var(--cw); height: var(--bh);
+      transform-origin: left center;
+      transform: rotateY(90deg);
+      background:
+        repeating-linear-gradient(
+          to bottom,
+          #f2eada 0px, #f2eada 0.8px,
+          #e8dfc8 1px, #e8dfc8 1.8px,
+          #f5f0e0 2px
+        );
+      /* pages are behind, should rarely be visible */
+      backface-visibility: hidden;
+    }
+
+    /* ── Ghost (empty) slots ── */
+    .book-ghost {
+      width: var(--sw, 40px);
+      height: var(--bh, 215px);
+      margin: 0 5px;
+      transform-style: preserve-3d;
+      transform: rotateY(-22deg);
+      opacity: 0.18;
+      flex-shrink: 0;
+    }
+    .book-ghost .f-spine {
+      inset: 0; position: absolute;
+      background: #2a1e12;
+    }
+    .book-ghost .f-cover {
+      position: absolute;
+      top: 0; left: 40px;
+      width: 138px; height: 215px;
+      transform-origin: left center;
+      transform: rotateY(90deg);
+      background: #1e1508;
+    }
+
+    /* ── Decorative objects on shelf ── */
+    .shelf-deco {
+      display: flex; align-items: flex-end;
+      margin: 0 12px;
+      flex-shrink: 0;
+    }
+
+    .small-plant {
+      width: 34px; height: 52px;
+      position: relative;
+    }
+    .small-plant::before {
+      content: '';
+      position: absolute; bottom: 0; left: 50%; transform: translateX(-50%);
+      width: 18px; height: 18px;
+      background: radial-gradient(ellipse, #5c3820 60%, #3a2010 100%);
+      border-radius: 3px 3px 6px 6px;
+    }
+    .small-plant::after {
+      content: '🌿';
+      position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%);
+      font-size: 1.6rem; line-height: 1;
+    }
+
+    .candle {
+      width: 14px;
+      display: flex; flex-direction: column; align-items: center;
+    }
+    .candle-flame {
+      width: 8px; height: 14px;
+      background: radial-gradient(ellipse at bottom, #fff6c0 20%, #ffb840 55%, transparent 100%);
+      border-radius: 50% 50% 20% 20%;
+      animation: flicker 1.8s ease-in-out infinite;
+      margin-bottom: 2px;
+    }
+    @keyframes flicker {
+      0%,100% { transform: scaleX(1) scaleY(1); opacity: 1; }
+      30%      { transform: scaleX(0.85) scaleY(1.08); opacity: 0.9; }
+      60%      { transform: scaleX(1.1) scaleY(0.95); opacity: 0.95; }
+    }
+    .candle-body {
+      width: 14px; height: 42px;
+      background: linear-gradient(to right, #e8ddc8, #f5f0e0, #c8c0a8);
+      border-radius: 2px 2px 3px 3px;
+    }
+    .candle-wax {
+      width: 14px; height: 3px;
+      background: #c8c090;
+      border-radius: 0 0 2px 2px;
+    }
+
+    /* ── Detail overlay ── */
+    .overlay {
+      position: fixed; inset: 0; z-index: 400;
+      display: flex; align-items: center; justify-content: center;
+      padding: 2rem;
+      opacity: 0; pointer-events: none;
+      transition: opacity 0.3s;
+    }
+    .overlay.open { opacity: 1; pointer-events: all; }
+
+    .overlay-backdrop {
+      position: absolute; inset: 0;
+      background: rgba(5,3,2,0.82);
+      backdrop-filter: blur(6px);
+      -webkit-backdrop-filter: blur(6px);
+    }
+
+    .detail-card {
+      position: relative; z-index: 1;
+      display: flex; gap: 0;
+      max-width: 680px; width: 100%;
+      border-radius: 3px;
+      overflow: hidden;
+      transform: translateY(20px);
+      transition: transform 0.4s cubic-bezier(.16,.84,.44,1);
+      box-shadow: 0 24px 80px rgba(0,0,0,0.7);
+    }
+    .overlay.open .detail-card { transform: translateY(0); }
+
+    /* book cover panel */
+    .detail-cover {
+      width: 160px; min-width: 160px;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: flex-end;
+      padding: 2rem 1.2rem 1.5rem;
+      position: relative;
+    }
+    .detail-cover .cover-title {
+      font-family: 'Spectral', serif;
+      font-size: 0.82rem; font-weight: 400;
+      color: rgba(255,255,255,0.8);
+      text-align: center; line-height: 1.35;
+      letter-spacing: 0.02em;
+    }
+    .detail-cover .cover-author {
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.65rem; font-weight: 300;
+      letter-spacing: 0.1em; text-transform: uppercase;
+      color: rgba(255,255,255,0.4);
+      margin-top: 0.5rem; text-align: center;
+    }
+    .detail-cover::before {
+      content: '';
+      position: absolute; inset: 0;
+      background: linear-gradient(to top, rgba(0,0,0,0.55) 0%, transparent 60%);
+    }
+    .detail-cover .year-badge {
+      position: absolute; top: 1.2rem; right: 1rem;
+      font-size: 0.65rem; letter-spacing: 0.1em;
+      color: rgba(255,255,255,0.3);
+    }
+
+    /* info panel */
+    .detail-info {
+      flex: 1;
+      background: #110d0a;
+      padding: 2.2rem 2rem 2rem;
+      border-left: 1px solid rgba(255,255,255,0.05);
+    }
+    .detail-category {
+      font-size: 0.65rem; letter-spacing: 0.2em; text-transform: uppercase;
+      color: rgba(232,221,208,0.3); margin-bottom: 0.75rem;
+    }
+    .detail-title {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 1.4rem; font-weight: 600;
+      line-height: 1.2; letter-spacing: -0.01em;
+      color: #e8ddd0; margin-bottom: 0.3rem;
+    }
+    .detail-author {
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.75rem; font-weight: 300;
+      color: rgba(232,221,208,0.4); letter-spacing: 0.06em;
+      margin-bottom: 1.5rem;
+    }
+    .detail-rule {
+      width: 28px; height: 1px;
+      margin-bottom: 1.4rem;
+      opacity: 0.3;
+    }
+    .detail-note {
+      font-family: 'Spectral', serif;
+      font-style: italic; font-weight: 300;
+      font-size: 0.93rem; line-height: 1.82;
+      color: rgba(232,221,208,0.72);
+      margin-bottom: 1.5rem;
+    }
+    .detail-tags {
+      font-size: 0.65rem; font-weight: 300;
+      letter-spacing: 0.1em; text-transform: uppercase;
+      color: rgba(232,221,208,0.25);
+    }
+    .detail-tags span { margin: 0 0.4em; }
+
+    .close-btn {
+      position: absolute; top: 0.9rem; right: 1rem;
+      z-index: 2;
+      background: none; border: none; cursor: pointer;
+      font-size: 1.1rem; color: rgba(232,221,208,0.3);
+      line-height: 1; transition: color 0.2s;
+      padding: 4px 8px;
+    }
+    .close-btn:hover { color: rgba(232,221,208,0.7); }
+
+    /* hint text below shelf */
+    .shelf-hint {
+      position: relative; z-index: 10;
+      text-align: center; padding: 2.5rem 2rem 1rem;
+      font-size: 0.7rem; font-weight: 300;
+      letter-spacing: 0.14em; text-transform: uppercase;
+      color: rgba(232,221,208,0.15);
+    }
+
+    /* footer */
+    footer {
+      position: relative; z-index: 10;
+      text-align: center;
+      padding: 1rem 2rem 3rem;
+      font-family: 'Cormorant Garamond', serif;
+      font-style: italic; font-weight: 300;
+      font-size: 0.9rem; color: rgba(232,221,208,0.18);
+    }
+
+    @media (max-width: 600px) {
+      .shelf-plank { padding: 1.5rem 1rem 0; gap: 0; }
+      .detail-cover { width: 110px; min-width: 110px; padding: 1.5rem 0.8rem 1rem; }
+      .detail-info { padding: 1.5rem 1.2rem 1.2rem; }
+      .book { --sw: 32px; --bh: 180px; margin: 0 3px; }
+      .book-ghost { --sw: 32px; --bh: 180px; margin: 0 3px; }
+      .book-ghost .f-cover { left: 32px; }
+    }
+  </style>
+</head>
+<body>
+  <canvas id="starfield"></canvas>
+  <div class="lamp-glow"></div>
+
+  <nav>
+    <a href="./moodboard.html" class="back-btn">← back to room</a>
+    <span class="nav-title">bookshelf</span>
+    <span class="nav-count">2 books · growing</span>
+  </nav>
+
+  <div class="page-header">
+    <p class="eyebrow">Linning Xu · Reading</p>
+    <h1>the shelf</h1>
+    <p class="sub">books that left something behind</p>
+  </div>
+
+  <div class="shelf-scene">
+    <div class="shelf-wrap">
+      <div class="shelf-unit">
+        <div class="shelf-plank" id="books-row">
+
+          <!-- Book 0: Becoming Bulletproof -->
+          <div class="book" data-idx="0"
+               style="--sw:42px; --cw:135px; --bh:220px;">
+            <div class="f-spine"
+                 style="background: linear-gradient(to right, #1e3c18 0%, #2d5422 60%, #243f1c 100%);">
+              <span class="spine-title">Becoming Bulletproof</span>
+            </div>
+            <div class="f-cover"
+                 style="background: linear-gradient(135deg, #2d5422 0%, #1a3512 100%);">
+            </div>
+            <div class="f-pages"></div>
+          </div>
+
+          <!-- Book 1: How Bad Do You Want It? -->
+          <div class="book" data-idx="1"
+               style="--sw:38px; --cw:135px; --bh:200px;">
+            <div class="f-spine"
+                 style="background: linear-gradient(to right, #122038 0%, #1c3050 60%, #162840 100%);">
+              <span class="spine-title">How Bad Do You Want It?</span>
+            </div>
+            <div class="f-cover"
+                 style="background: linear-gradient(135deg, #1c3050 0%, #0e1c30 100%);">
+            </div>
+            <div class="f-pages"></div>
+          </div>
+
+          <!-- Ghost slots -->
+          <div class="book-ghost" style="--sw:35px; --bh:185px;">
+            <div class="f-spine" style="background:#201608;"></div>
+            <div class="f-cover" style="background:#180f06; left:35px; width:130px; height:185px;"></div>
+          </div>
+          <div class="book-ghost" style="--sw:44px; --bh:210px;">
+            <div class="f-spine" style="background:#201a10;"></div>
+            <div class="f-cover" style="background:#18140c; left:44px; width:130px; height:210px;"></div>
+          </div>
+          <div class="book-ghost" style="--sw:36px; --bh:195px;">
+            <div class="f-spine" style="background:#1a1410;"></div>
+            <div class="f-cover" style="background:#14100c; left:36px; width:130px; height:195px;"></div>
+          </div>
+
+          <!-- Decorative: candle -->
+          <div class="shelf-deco" style="margin-left:auto;">
+            <div class="candle">
+              <div class="candle-flame"></div>
+              <div class="candle-body"></div>
+              <div class="candle-wax"></div>
+            </div>
+          </div>
+
+          <!-- Decorative: small plant -->
+          <div class="shelf-deco">
+            <div class="small-plant"></div>
+          </div>
+
+        </div><!-- /shelf-plank -->
+      </div><!-- /shelf-unit -->
+    </div>
+  </div>
+
+  <p class="shelf-hint">click a book to read</p>
+
+  <!-- Detail overlay -->
+  <div class="overlay" id="overlay">
+    <div class="overlay-backdrop" id="overlay-backdrop"></div>
+    <div class="detail-card" id="detail-card">
+      <div class="detail-cover" id="detail-cover">
+        <span class="year-badge" id="detail-year"></span>
+        <p class="cover-title" id="detail-cover-title"></p>
+        <p class="cover-author" id="detail-cover-author"></p>
+      </div>
+      <div class="detail-info">
+        <button class="close-btn" id="close-btn" aria-label="close">✕</button>
+        <p class="detail-category" id="detail-category"></p>
+        <h2 class="detail-title" id="detail-title"></h2>
+        <p class="detail-author" id="detail-author-info"></p>
+        <div class="detail-rule" id="detail-rule"></div>
+        <p class="detail-note" id="detail-note"></p>
+        <p class="detail-tags" id="detail-tags"></p>
+      </div>
+    </div>
+  </div>
+
+
+  <script>
+  /* ── Book data ── */
+  const books = [
+    {
+      title: "Becoming Bulletproof",
+      subtitle: "Life Lessons from a Secret Service Agent",
+      author: "Evy Poumpouras",
+      year: "2020",
+      category: "Psychology · Resilience",
+      coverGradient: "linear-gradient(160deg, #1e3c18 0%, #2d5422 50%, #1a3010 100%)",
+      accentColor: "#4a7a35",
+      note: "Evy Poumpouras spent years protecting heads of state — reading rooms, controlling panic, deciding how to respond rather than react. What stayed with me isn't the tactics; it's the idea that confidence is a choice before it's a feeling. She calls it being 'bulletproof': not invincible, but so prepared that fear becomes just another piece of information. I think about it before talks, interviews, any moment that feels larger than I am.",
+      tags: ["confidence", "psychology", "presence", "resilience", "decision-making"]
+    },
+    {
+      title: "How Bad Do You Want It?",
+      subtitle: "Mastering the Psychology of Mind over Muscle",
+      author: "Matt Fitzgerald",
+      year: "2015",
+      category: "Sports Psychology · Endurance",
+      coverGradient: "linear-gradient(160deg, #122038 0%, #1c3050 50%, #0e1820 100%)",
+      accentColor: "#3a6090",
+      note: "Fitzgerald builds the case that endurance is psychobiological — the brain limits performance before the body fails, always. The ceiling is in your head, and it moves every time you push past what you thought was the edge. I read this during a stretch where the research wasn't working, rejection after rejection. It gave me a frame: the discomfort of not knowing, of not being good enough yet, is the whole point. How bad do you want it?",
+      tags: ["endurance", "mental toughness", "psychobiology", "performance", "willpower"]
+    }
+  ];
+
+  /* ── Overlay logic ── */
+  const overlay   = document.getElementById('overlay');
+  const backdrop  = document.getElementById('overlay-backdrop');
+  const closeBtn  = document.getElementById('close-btn');
+
+  function openBook(idx) {
+    const b = books[idx];
+    document.getElementById('detail-year').textContent         = b.year;
+    document.getElementById('detail-cover-title').textContent  = b.title;
+    document.getElementById('detail-cover-author').textContent = b.author;
+    document.getElementById('detail-category').textContent     = b.category;
+    document.getElementById('detail-title').textContent        = b.title;
+    document.getElementById('detail-author-info').textContent  = b.author + (b.subtitle ? ' — ' + b.subtitle : '');
+    document.getElementById('detail-note').textContent         = b.note;
+    document.getElementById('detail-cover').style.background   = b.coverGradient;
+    const rule = document.getElementById('detail-rule');
+    rule.style.background = b.accentColor;
+    document.getElementById('detail-tags').innerHTML =
+      b.tags.map(t => `<span>${t}</span>`).join('<span style="opacity:0.3"> · </span>');
+    overlay.classList.add('open');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeBook() {
+    overlay.classList.remove('open');
+    document.body.style.overflow = '';
+  }
+
+  document.querySelectorAll('.book[data-idx]').forEach(el => {
+    el.addEventListener('click', () => openBook(+el.dataset.idx));
+  });
+  backdrop.addEventListener('click', closeBook);
+  closeBtn.addEventListener('click', closeBook);
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') closeBook(); });
+
+  /* ── Starfield ── */
+  (function() {
+    const c = document.getElementById('starfield');
+    const ctx = c.getContext('2d');
+    let W, H, stars = [];
+    function resize() { W = c.width = window.innerWidth; H = c.height = window.innerHeight; }
+    function mkStars() {
+      stars = Array.from({length: 180}, () => ({
+        x: Math.random()*W, y: Math.random()*H,
+        r: Math.random()*0.8 + 0.1,
+        a: Math.random()*0.4 + 0.05,
+        da: (Math.random()*0.002 + 0.0006) * (Math.random()<0.5?1:-1)
+      }));
+    }
+    function draw() {
+      ctx.clearRect(0,0,W,H);
+      stars.forEach(s => {
+        s.a = Math.max(0.03, Math.min(0.5, s.a + s.da));
+        if (s.a >= 0.5 || s.a <= 0.03) s.da *= -1;
+        ctx.beginPath(); ctx.arc(s.x, s.y, s.r, 0, Math.PI*2);
+        ctx.fillStyle = `rgba(240,225,200,${s.a})`; ctx.fill();
+      });
+      requestAnimationFrame(draw);
+    }
+    resize(); mkStars(); draw();
+    window.addEventListener('resize', () => { resize(); mkStars(); });
+  })();
+  </script>
+</body>
+</html>

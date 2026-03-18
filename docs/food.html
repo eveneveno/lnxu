@@ -1,0 +1,1026 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Food Diary — Linning Xu</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;1,400;1,700&family=Lora:ital,wght@0,400;1,400&family=Caveat:wght@400;600&family=DM+Sans:wght@300;400&display=swap"
+    rel="stylesheet">
+  <style>
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0
+    }
+
+    body {
+      background: #0a0d14;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Lora', Georgia, serif;
+      color: #2a1a0c;
+      overflow: hidden;
+    }
+
+    /* starfield */
+    #starfield {
+      position: fixed;
+      inset: 0;
+      width: 100vw;
+      height: 100vh;
+      z-index: 0;
+      pointer-events: none;
+    }
+
+    /* nav */
+    nav {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 200;
+      padding: .85rem 1.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: linear-gradient(to bottom, rgba(10, 13, 20, .94) 60%, transparent);
+    }
+
+    .back-btn {
+      color: rgba(240, 232, 216, .4);
+      text-decoration: none;
+      font-family: 'DM Sans', sans-serif;
+      font-size: .7rem;
+      font-weight: 300;
+      letter-spacing: .14em;
+      text-transform: uppercase;
+      transition: color .2s;
+    }
+
+    .back-btn:hover {
+      color: rgba(240, 232, 216, .85);
+    }
+
+    .nav-title {
+      font-family: 'Playfair Display', serif;
+      font-size: .95rem;
+      font-style: italic;
+      color: rgba(240, 232, 216, .35);
+    }
+
+    .nav-hint {
+      font-family: 'DM Sans', sans-serif;
+      font-size: .68rem;
+      font-weight: 300;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      color: rgba(240, 232, 216, .18);
+    }
+
+    /* ── SCENE ── */
+    #scene {
+      position: relative;
+      z-index: 10;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1.2rem;
+      padding: 4rem 1rem 2rem;
+    }
+
+    /* ── BOOK ── */
+    #book-wrap {
+      perspective: 2400px;
+      position: relative;
+    }
+
+    #book {
+      width: 860px;
+      height: 540px;
+      position: relative;
+      transform-style: preserve-3d;
+      /* drop shadow to look like a real book */
+      filter: drop-shadow(0 20px 60px rgba(0, 0, 0, .7)) drop-shadow(0 4px 12px rgba(0, 0, 0, .5));
+    }
+
+    /* ── COVER (initial state, full-width) ── */
+    #cover {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(160deg, #4a1e10 0%, #3a1508 40%, #2e1006 100%);
+      border-radius: 3px 6px 6px 3px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      z-index: 30;
+      transform-origin: left center;
+      transition: none;
+      overflow: hidden;
+    }
+
+    #cover::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 14px;
+      height: 100%;
+      background: linear-gradient(to right, #1e0a04, #3a1508);
+      border-right: 1px solid rgba(255, 255, 255, .04);
+    }
+
+    #cover::after {
+      content: '';
+      position: absolute;
+      inset: 16px;
+      border: 1px solid rgba(255, 190, 80, .12);
+    }
+
+    .cover-content {
+      text-align: center;
+      padding: 0 2rem;
+      pointer-events: none;
+    }
+
+    .cover-emoji {
+      font-size: 2.8rem;
+      margin-bottom: 1.2rem;
+      opacity: .85;
+    }
+
+    .cover-title {
+      font-family: 'Playfair Display', serif;
+      font-size: 2.4rem;
+      font-weight: 700;
+      font-style: italic;
+      color: #f5e6c8;
+      letter-spacing: .02em;
+      line-height: 1;
+      margin-bottom: .5rem;
+    }
+
+    .cover-sub {
+      font-family: 'Caveat', cursive;
+      font-size: 1rem;
+      color: rgba(245, 230, 200, .5);
+      letter-spacing: .05em;
+    }
+
+    .cover-rule {
+      width: 80px;
+      height: 1px;
+      background: linear-gradient(to right, transparent, rgba(255, 190, 80, .35), transparent);
+      margin: 1rem auto;
+    }
+
+    .cover-open-hint {
+      font-family: 'Caveat', cursive;
+      font-size: .9rem;
+      color: rgba(245, 230, 200, .32);
+      margin-top: 1.4rem;
+      animation: hint-pulse 2.5s ease-in-out infinite;
+    }
+
+    @keyframes hint-pulse {
+
+      0%,
+      100% {
+        opacity: .32;
+      }
+
+      50% {
+        opacity: .7;
+      }
+    }
+
+    /* ── OPEN BOOK PAGES ── */
+    .page {
+      position: absolute;
+      top: 0;
+      height: 100%;
+      width: 50%;
+      overflow: hidden;
+    }
+
+    #left-page {
+      left: 0;
+      border-radius: 3px 0 0 3px;
+    }
+
+    #right-page {
+      left: 50%;
+      border-radius: 0 6px 6px 0;
+    }
+
+    /* page paper texture */
+    .page-paper {
+      position: absolute;
+      inset: 0;
+      background: #f8f2e4;
+      background-image:
+        repeating-linear-gradient(0deg, transparent 0, transparent 27px, rgba(180, 160, 120, .12) 27px, rgba(180, 160, 120, .12) 28px),
+        radial-gradient(ellipse at 20% 20%, rgba(255, 220, 140, .06) 0%, transparent 60%);
+    }
+
+    /* spine shadow */
+    #left-page .page-paper::after {
+      content: '';
+      position: absolute;
+      right: 0;
+      top: 0;
+      width: 18px;
+      height: 100%;
+      background: linear-gradient(to left, rgba(0, 0, 0, .08), transparent);
+    }
+
+    #right-page .page-paper::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 18px;
+      height: 100%;
+      background: linear-gradient(to right, rgba(0, 0, 0, .08), transparent);
+      z-index: 1;
+    }
+
+    /* book spine center */
+    .spine-bar {
+      position: absolute;
+      top: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 10px;
+      height: 100%;
+      background: linear-gradient(to right, #2e1006, #4a1e10, #2e1006);
+      z-index: 20;
+      pointer-events: none;
+    }
+
+    /* page content wrapper */
+    .page-content {
+      position: absolute;
+      inset: 0;
+      padding: 2.2rem 2.2rem 1.8rem;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* ── LEFT decorative page ── */
+    .deco-page {
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: .6rem;
+      text-align: center;
+    }
+
+    .deco-num {
+      font-family: 'Caveat', cursive;
+      font-size: .75rem;
+      letter-spacing: .18em;
+      text-transform: uppercase;
+      color: rgba(80, 50, 20, .35);
+    }
+
+    .deco-emoji {
+      font-size: 3.2rem;
+      line-height: 1;
+    }
+
+    .deco-place {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.1rem;
+      font-style: italic;
+      color: rgba(80, 50, 20, .55);
+      margin-top: .2rem;
+    }
+
+    .deco-country {
+      font-family: 'Caveat', cursive;
+      font-size: .85rem;
+      color: rgba(80, 50, 20, .4);
+    }
+
+    .deco-rule {
+      width: 48px;
+      height: 1px;
+      margin: .5rem auto;
+    }
+
+    .deco-stamp {
+      width: 52px;
+      height: 52px;
+      border: 2px solid currentColor;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Caveat', cursive;
+      font-size: .72rem;
+      text-align: center;
+      line-height: 1.2;
+      letter-spacing: .03em;
+      transform: rotate(-6deg);
+      opacity: .5;
+      margin-top: .3rem;
+    }
+
+    .deco-corner {
+      position: absolute;
+      bottom: 1.4rem;
+      right: 1.8rem;
+      font-family: 'Caveat', cursive;
+      font-size: .72rem;
+      color: rgba(80, 50, 20, .25);
+      letter-spacing: .08em;
+    }
+
+    /* ── INTRO left page ── */
+    .intro-page {
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      gap: .5rem;
+    }
+
+    .intro-eyebrow {
+      font-family: 'Caveat', cursive;
+      font-size: .8rem;
+      letter-spacing: .18em;
+      text-transform: uppercase;
+      color: rgba(80, 50, 20, .38);
+    }
+
+    .intro-title {
+      font-family: 'Playfair Display', serif;
+      font-size: 2rem;
+      font-weight: 700;
+      font-style: italic;
+      color: rgba(60, 30, 10, .7);
+      line-height: 1;
+    }
+
+    .intro-rule {
+      width: 56px;
+      height: 1px;
+      background: rgba(80, 50, 20, .2);
+      margin: .4rem auto;
+    }
+
+    .intro-note {
+      font-family: 'Lora', serif;
+      font-style: italic;
+      font-size: .82rem;
+      line-height: 1.8;
+      color: rgba(80, 50, 20, .5);
+      max-width: 220px;
+    }
+
+    .intro-toc {
+      margin-top: .8rem;
+      font-family: 'Caveat', cursive;
+      font-size: .78rem;
+      color: rgba(80, 50, 20, .38);
+      line-height: 1.9;
+      text-align: left;
+    }
+
+    /* ── ENTRY right page ── */
+    .entry-page {
+      height: 100%;
+    }
+
+    .entry-num {
+      font-family: 'Caveat', cursive;
+      font-size: .72rem;
+      letter-spacing: .15em;
+      text-transform: uppercase;
+      opacity: .45;
+      margin-bottom: .35rem;
+    }
+
+    .entry-loc {
+      font-family: 'Caveat', cursive;
+      font-size: .8rem;
+      opacity: .5;
+      float: right;
+      margin-top: -1.4rem;
+    }
+
+    .entry-emoji {
+      font-size: 2rem;
+      line-height: 1;
+      display: block;
+      margin-bottom: .4rem;
+    }
+
+    .entry-name {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.5rem;
+      font-weight: 700;
+      line-height: 1.1;
+      margin-bottom: .15rem;
+    }
+
+    .entry-origin {
+      font-family: 'Caveat', cursive;
+      font-size: .78rem;
+      opacity: .5;
+      margin-bottom: .8rem;
+    }
+
+    .entry-divider {
+      width: 32px;
+      height: 1px;
+      opacity: .3;
+      margin-bottom: .8rem;
+    }
+
+    .entry-note {
+      font-family: 'Lora', serif;
+      font-style: italic;
+      font-size: .84rem;
+      line-height: 1.78;
+      padding-left: .75rem;
+      border-left: 2px solid currentColor;
+      opacity: .82;
+      margin-bottom: .65rem;
+      flex: 1;
+      overflow: hidden;
+    }
+
+    .entry-annot {
+      font-family: 'Caveat', cursive;
+      font-size: .8rem;
+      opacity: .52;
+      margin-bottom: .65rem;
+    }
+
+    .entry-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+      padding-top: .55rem;
+      border-top: 1px dashed currentColor;
+      opacity: .45;
+    }
+
+    .entry-tag {
+      font-family: 'Caveat', cursive;
+      font-size: .72rem;
+      border: 1px solid currentColor;
+      border-radius: 10px;
+      padding: 1px 8px;
+    }
+
+    .entry-pagenum {
+      position: absolute;
+      bottom: 1.2rem;
+      right: 1.8rem;
+      font-family: 'Caveat', cursive;
+      font-size: .72rem;
+      opacity: .3;
+      letter-spacing: .06em;
+    }
+
+    /* ── FLIPPING LEAF ── */
+    #flip-leaf {
+      position: absolute;
+      top: 0;
+      height: 100%;
+      width: 50%;
+      left: 50%;
+      transform-style: preserve-3d;
+      transform-origin: left center;
+      z-index: 25;
+      pointer-events: none;
+    }
+
+    #flip-leaf.hidden {
+      display: none;
+    }
+
+    #flip-leaf.going-next {
+      animation: flipNext .72s cubic-bezier(.45, .05, .55, .95) forwards;
+    }
+
+    #flip-leaf.going-prev {
+      animation: flipPrev .72s cubic-bezier(.45, .05, .55, .95) forwards;
+    }
+
+    @keyframes flipNext {
+      from {
+        transform: rotateY(0deg);
+      }
+
+      to {
+        transform: rotateY(-180deg);
+      }
+    }
+
+    @keyframes flipPrev {
+      from {
+        transform: rotateY(-180deg);
+      }
+
+      to {
+        transform: rotateY(0deg);
+      }
+    }
+
+    .flip-face {
+      position: absolute;
+      inset: 0;
+      backface-visibility: hidden;
+      -webkit-backface-visibility: hidden;
+      overflow: hidden;
+    }
+
+    #flip-back {
+      transform: rotateY(180deg);
+      border-radius: 0 6px 6px 0;
+    }
+
+    #flip-front {
+      border-radius: 0 6px 6px 0;
+    }
+
+    /* cover open animation */
+    #cover.opening {
+      animation: coverOpen .8s cubic-bezier(.45, .05, .55, .95) forwards;
+    }
+
+    @keyframes coverOpen {
+      from {
+        transform: rotateY(0deg);
+      }
+
+      to {
+        transform: rotateY(-180deg);
+      }
+    }
+
+    #cover.closed-back {
+      transform: rotateY(-180deg);
+      pointer-events: none;
+      display: none;
+    }
+
+    /* ── NAV CONTROLS ── */
+    #controls {
+      display: flex;
+      align-items: center;
+      gap: 1.4rem;
+      position: relative;
+      z-index: 10;
+    }
+
+    .nav-arrow {
+      background: none;
+      border: 1px solid rgba(240, 232, 216, .16);
+      color: rgba(240, 232, 216, .45);
+      width: 38px;
+      height: 38px;
+      cursor: pointer;
+      font-size: .95rem;
+      transition: all .18s;
+      font-family: 'DM Sans', sans-serif;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .nav-arrow:hover:not(:disabled) {
+      border-color: rgba(240, 232, 216, .45);
+      color: rgba(240, 232, 216, .85);
+      background: rgba(240, 232, 216, .04);
+    }
+
+    .nav-arrow:disabled {
+      opacity: .2;
+      cursor: default;
+    }
+
+    #page-indicator {
+      font-family: 'Caveat', cursive;
+      font-size: 1rem;
+      color: rgba(240, 232, 216, .3);
+      letter-spacing: .08em;
+      min-width: 80px;
+      text-align: center;
+    }
+
+    /* ── MOBILE ── */
+    @media (max-width: 900px) {
+      body {
+        overflow: auto;
+      }
+
+      #scene {
+        padding: 3.5rem .5rem 2rem;
+      }
+
+      #book-wrap {
+        width: 100%;
+        overflow: hidden;
+      }
+
+      #book {
+        width: 100vw;
+        height: calc(100vw * 540/860);
+        min-height: 280px;
+        transform-origin: top left;
+        /* JS sets scale */
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <canvas id="starfield"></canvas>
+
+  <nav>
+    <a href="./moodboard.html" class="back-btn">← back to room</a>
+    <span class="nav-title">Food Diary</span>
+    <span class="nav-hint">use ← → to turn pages</span>
+  </nav>
+
+  <div id="scene">
+    <div id="book-wrap">
+      <div id="book">
+
+        <!-- ── SPINE BAR ── -->
+        <div class="spine-bar"></div>
+
+        <!-- ── LEFT PAGE ── -->
+        <div id="left-page" class="page">
+          <div class="page-paper"></div>
+          <div class="page-content" id="left-content"></div>
+        </div>
+
+        <!-- ── RIGHT PAGE ── -->
+        <div id="right-page" class="page">
+          <div class="page-paper"></div>
+          <div class="page-content" id="right-content"></div>
+        </div>
+
+        <!-- ── FLIPPING LEAF ── -->
+        <div id="flip-leaf" class="hidden">
+          <div class="flip-face" id="flip-front">
+            <div class="page-paper"></div>
+            <div class="page-content" id="flip-front-content"></div>
+          </div>
+          <div class="flip-face" id="flip-back">
+            <div class="page-paper"></div>
+            <div class="page-content" id="flip-back-content"></div>
+          </div>
+        </div>
+
+        <!-- ── FRONT COVER (starts visible) ── -->
+        <div id="cover">
+          <div class="cover-content">
+            <div class="cover-emoji">📖</div>
+            <div class="cover-rule"></div>
+            <div class="cover-title">Food Diary</div>
+            <div class="cover-sub">dishes that left a mark</div>
+            <div class="cover-rule"></div>
+            <div class="cover-open-hint">click to open →</div>
+          </div>
+        </div>
+
+      </div><!-- /book -->
+    </div><!-- /book-wrap -->
+
+    <div id="controls">
+      <button class="nav-arrow" id="btn-prev" disabled>←</button>
+      <span id="page-indicator">cover</span>
+      <button class="nav-arrow" id="btn-next">→</button>
+    </div>
+  </div>
+
+  <script>
+    /* ── Starfield ── */
+    (function () {
+      const c = document.getElementById('starfield'), ctx = c.getContext('2d');
+      let W, H, S = [];
+      function resize() { W = c.width = window.innerWidth; H = c.height = window.innerHeight; }
+      function mkS() { S = Array.from({ length: 90 }, () => ({ x: Math.random() * W, y: Math.random() * H, r: Math.random() * .8 + .2, tw: Math.random() * Math.PI * 2, d: Math.random() * .5 + .15 })); }
+      function draw() { ctx.clearRect(0, 0, W, H); for (const s of S) { ctx.save(); ctx.globalAlpha = .28 + .16 * Math.sin(s.tw); ctx.beginPath(); ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2); ctx.fillStyle = '#fff'; ctx.shadowColor = '#c9a96e'; ctx.shadowBlur = 4; ctx.fill(); ctx.restore(); s.tw += s.d * .018; } requestAnimationFrame(draw); }
+      resize(); mkS(); draw();
+      window.addEventListener('resize', () => { resize(); mkS(); });
+    })();
+
+    /* ── Mobile scale ── */
+    function scaleBook() {
+      const bw = document.getElementById('book-wrap');
+      const available = Math.min(window.innerWidth - 32, 860);
+      if (available < 860) {
+        document.getElementById('book').style.transform = `scale(${available / 860})`;
+        document.getElementById('book').style.transformOrigin = 'top left';
+        document.getElementById('book-wrap').style.width = available + 'px';
+        document.getElementById('book-wrap').style.height = (available * 540 / 860) + 'px';
+      } else {
+        document.getElementById('book').style.transform = '';
+        document.getElementById('book-wrap').style.width = '';
+        document.getElementById('book-wrap').style.height = '';
+      }
+    }
+    scaleBook();
+    window.addEventListener('resize', scaleBook);
+
+    /* ── DATA ── */
+    const entries = [
+      {
+        num: 'No. 01', emoji: '🍝', name: 'Spaghetti Carbonara',
+        origin: 'cucina romana · Italy', loc: '📍 Rome, Italy',
+        color: '#d44830', bg: 'rgba(210,80,50,0.07)',
+        note: 'The rule is simple: no cream. Ever. I learned this the hard way after years of well-meaning additions. The real thing — just eggs, pecorino, guanciale, black pepper, and patient stirring over residual heat — is one of those recipes that rewards honesty.',
+        annot: '→ the pasta water is the secret. don\'t skip it.',
+        tags: ['guanciale', 'pecorino', 'eggs', 'no cream!']
+      },
+      {
+        num: 'No. 02', emoji: '🍕', name: 'Pizza Napoletana',
+        origin: 'margherita · marinara · Italy', loc: '📍 Naples, Italy',
+        color: '#d48830', bg: 'rgba(210,140,40,0.07)',
+        note: 'There\'s a small place in Naples with no seats and a sign that\'s barely legible. The pizza came out blistered and charred at the edges, impossibly light in the center. I ate it standing in the street and felt like I finally understood something about restraint.',
+        annot: '→ 00 flour, 24h cold proof. no shortcuts.',
+        tags: ['00 flour', 'san marzano', 'wood-fired']
+      },
+      {
+        num: 'No. 03', emoji: '🐟', name: 'Salt-Baked Salmon',
+        origin: 'a personal constant', loc: '📍 every apartment i\'ve lived in',
+        color: '#28b48c', bg: 'rgba(40,180,140,0.07)',
+        note: 'I\'ve made this in every apartment I\'ve lived in, from a dorm kitchen in CUHK to a flat in the Bay Area. It\'s the dish I make when the week has been long and I want something that feels like taking care of myself. Pink center, crisp skin, a squeeze of lemon.',
+        annot: '→ skin-side down first. be patient.',
+        tags: ['salmon', 'lemon', 'dill', 'butter']
+      },
+      {
+        num: 'No. 04', emoji: '🥣', name: 'Soupe à l\'Oignon',
+        origin: 'french onion soup · France', loc: '📍 Paris, France',
+        color: '#4466ee', bg: 'rgba(60,100,220,0.07)',
+        note: 'A rainy afternoon in Paris, sitting in a corner bistro with my coat still on. The Gruyère pulled into long strings, and the broth was almost painfully sweet from caramelized onions. That bowl made me feel like I belonged there, even if only for an hour.',
+        annot: '→ caramelize for at least 45 min. the patience is the recipe.',
+        tags: ['yellow onions', 'gruyère', 'baguette', 'thyme']
+      },
+      {
+        num: 'No. 05', emoji: '🐌', name: 'Escargots de Bourgogne',
+        origin: 'burgundy snails · France', loc: '📍 Lyon, France',
+        color: '#44bb44', bg: 'rgba(60,180,60,0.07)',
+        note: 'The first time I ordered them I was mostly curious and a little terrified. The garlic butter hit before the flavor did — rich, herby, almost aggressive. By the sixth one I understood why the French are so serious about this. Texture is just a matter of expectation.',
+        annot: '→ the bread after, soaked in leftover butter, is the real dish.',
+        tags: ['escargots', 'garlic butter', 'parsley', 'shallot']
+      },
+      {
+        num: 'No. 06', emoji: '🍜', name: 'Tonkotsu Ramen',
+        origin: 'hakata style · Japan', loc: '📍 Fukuoka, Japan',
+        color: '#ee7020', bg: 'rgba(220,110,30,0.07)',
+        note: 'A midnight bowl in Fukuoka, cloudy and impossibly rich, chashu that barely held together. The counter had twelve seats, all taken. It was raining outside. I\'ve been chasing that exact bowl ever since, across a dozen cities. I never quite find it. Maybe that\'s the point.',
+        annot: '→ kaedama (extra noodles) is not optional. it\'s the law.',
+        tags: ['tonkotsu', 'chashu', 'soft egg', 'thin noodles']
+      },
+      {
+        num: 'No. 07', emoji: '🥟', name: 'Night Market Everything',
+        origin: 'taiwanese street food', loc: '📍 Taipei, Taiwan',
+        color: '#dd3880', bg: 'rgba(200,50,110,0.07)',
+        note: '3am at a Taipei night market, a scallion pancake folded around an egg, eaten standing under fluorescent light. Then beef noodle soup from a place with no English menu. Some food is just geography wearing a disguise, and some nights are just alive in a way you can\'t explain.',
+        annot: '→ braised beef tendon. always the tendon.',
+        tags: ['scallion pancake', 'beef noodle', 'oyster vermicelli', '3am']
+      },
+      {
+        num: 'No. 09', emoji: '🥐', name: 'Le Croissant',
+        origin: 'viennoiserie · France', loc: '📍 Paris, France',
+        color: '#c8a800', bg: 'rgba(200,168,0,0.07)',
+        note: 'A real croissant — the kind that shatters when you bite it, that leaves crumbs on your jacket, that tastes only of butter — eaten on a park bench in Paris in September with the light doing that particular thing it does in autumn. I have tried to replicate this. The bench was the ingredient I was missing.',
+        annot: '→ always eat within 2 hours of baking. nothing else counts.',
+        tags: ['laminated dough', 'cultured butter', 'patience', 'a good bench']
+      }
+    ];
+
+    /* ── Page renderers ── */
+    function renderIntroLeft() {
+      return `<div class="intro-page">
+    <div class="intro-eyebrow">Linning Xu · 2021–</div>
+    <div class="intro-title">Food<br>Diary</div>
+    <div class="intro-rule"></div>
+    <div class="intro-note">dishes that left a mark — across cities, seasons, and kitchens</div>
+    <div class="intro-toc">
+      No.01 Carbonara · Rome<br>
+      No.02 Pizza · Naples<br>
+      No.03 Salmon · everywhere<br>
+      No.04 Onion Soup · Paris<br>
+      No.05 Escargots · Lyon<br>
+      No.06 Ramen · Fukuoka<br>
+      No.07 Night Market · Taipei<br>
+      No.08 Croissant · Paris
+    </div>
+  </div>
+  <div class="deco-corner">to be continued ✨</div>`;
+    }
+
+    function renderDecoLeft(e) {
+      return `<div class="page-content deco-page" style="color:${e.color}">
+    <div class="deco-num">${e.num}</div>
+    <div class="deco-emoji">${e.emoji}</div>
+    <div class="deco-rule" style="background:${e.color};opacity:.25;"></div>
+    <div class="deco-place">${e.loc.replace('📍 ', '')}</div>
+    <div class="deco-country" style="font-size:.8rem;">${e.origin}</div>
+    <div class="deco-stamp" style="color:${e.color};">${e.name}</div>
+  </div>
+  <div class="deco-corner" style="color:${e.color};">${e.num}</div>`.replace('<div class="page-content deco-page"', '<div class="deco-page"');
+    }
+
+    function renderEntry(e, pageN) {
+      return `<div class="entry-page" style="color:${e.color}">
+    <div style="color:rgba(80,50,20,.6)">
+      <div class="entry-num" style="color:rgba(80,50,20,.45);">${e.num}<span class="entry-loc">${e.loc}</span></div>
+      <div class="entry-emoji">${e.emoji}</div>
+      <div class="entry-name">${e.name}</div>
+      <div class="entry-origin">${e.origin}</div>
+      <div class="entry-divider" style="background:${e.color};"></div>
+    </div>
+    <div class="entry-note" style="border-color:${e.color};color:rgba(50,28,8,.82);">${e.note}</div>
+    <div class="entry-annot" style="color:rgba(80,50,20,.55);">${e.annot}</div>
+    <div class="entry-tags" style="border-color:${e.color};color:${e.color};">
+      ${e.tags.map(t => `<span class="entry-tag">${t}</span>`).join('')}
+    </div>
+    <div class="entry-pagenum" style="color:rgba(80,50,20,.28);">— ${pageN} —</div>
+  </div>`;
+    }
+
+    function renderClosingLeft() {
+      return `<div class="intro-page" style="color:rgba(80,50,20,.55)">
+    <div class="intro-eyebrow">the diary continues</div>
+    <div class="intro-rule"></div>
+    <div class="intro-note" style="font-size:.88rem;max-width:230px;line-height:1.85;">
+      to be continued — there are always more dishes, more cities, more memories ✨
+    </div>
+    <div style="margin-top:1.2rem;font-family:'Caveat',cursive;font-size:.78rem;color:rgba(80,50,20,.32);line-height:2;">
+      more pages coming:<br>
+      Dim Sum · Hong Kong<br>
+      Kaiseki · Kyoto<br>
+      Shakshuka · Tel Aviv<br>
+      &hellip;
+    </div>
+  </div>
+  <div class="deco-corner">fin ✦</div>`;
+    }
+
+    /*
+      Spreads:
+      -1  = closed (cover visible)
+       0  = intro left | entry1 right
+       1  = entry2 left | entry3 right
+       2  = entry4 left | entry5 right
+       3  = entry6 left | entry7 right
+       4  = entry8 left | entry9 right
+       5  = closing left | closing right
+    */
+    const MAX_SPREAD = 5;
+    let currentSpread = -1;
+    let animating = false;
+
+    function getLeftContent(s) {
+      if (s === 0) return renderIntroLeft();
+      if (s === 1) return renderDecoLeft(entries[1]);  // entry2 decoration
+      if (s === 2) return renderDecoLeft(entries[3]);
+      if (s === 3) return renderDecoLeft(entries[5]);
+      if (s === 4) return renderDecoLeft(entries[7]);
+      if (s === 5) return renderClosingLeft();
+      return '';
+    }
+    function getRightContent(s) {
+      if (s === 0) return renderEntry(entries[0], 1);
+      if (s === 1) return renderEntry(entries[2], 3);
+      if (s === 2) return renderEntry(entries[4], 5);
+      if (s === 3) return renderEntry(entries[6], 7);
+      if (s === 4) return renderEntry(entries[8], 9);
+      if (s === 5) return `<div class="intro-page"><div class="intro-eyebrow">Food Diary</div><div class="intro-rule"></div><div class="intro-note">every dish is a memory wearing a disguise</div></div>`;
+      return '';
+    }
+
+    function updateIndicator() {
+      const el = document.getElementById('page-indicator');
+      if (currentSpread === -1) el.textContent = 'cover';
+      else if (currentSpread === MAX_SPREAD) el.textContent = 'fin';
+      else el.textContent = `${currentSpread + 1} / ${MAX_SPREAD}`;
+      document.getElementById('btn-prev').disabled = (currentSpread <= 0);
+      document.getElementById('btn-next').disabled = (currentSpread >= MAX_SPREAD);
+    }
+
+    function setPages() {
+      document.getElementById('left-content').innerHTML = getLeftContent(currentSpread);
+      document.getElementById('right-content').innerHTML = getRightContent(currentSpread);
+    }
+
+    /* ── Open book (cover flip) ── */
+    function openBook() {
+      if (currentSpread !== -1) return;
+      const cover = document.getElementById('cover');
+      cover.classList.add('opening');
+      cover.addEventListener('animationend', () => {
+        cover.classList.add('closed-back');
+        currentSpread = 0;
+        setPages();
+        updateIndicator();
+        document.getElementById('left-page').style.display = '';
+        document.getElementById('right-page').style.display = '';
+      }, { once: true });
+    }
+
+    /* ── Flip pages ── */
+    function goNext() {
+      if (animating || currentSpread >= MAX_SPREAD) return;
+      animating = true;
+      const nextSpread = currentSpread + 1;
+
+      // flip-leaf starts as a copy of current right page
+      const leaf = document.getElementById('flip-leaf');
+      const ff = document.getElementById('flip-front-content');
+      const fb = document.getElementById('flip-back-content');
+
+      ff.innerHTML = getRightContent(currentSpread);
+      fb.innerHTML = getLeftContent(nextSpread);
+
+      leaf.classList.remove('hidden', 'going-prev', 'going-next');
+      void leaf.offsetWidth;
+      leaf.classList.add('going-next');
+
+      // already update right page to next right (appears from behind)
+      document.getElementById('right-content').innerHTML = getRightContent(nextSpread);
+
+      leaf.addEventListener('animationend', () => {
+        leaf.classList.add('hidden');
+        currentSpread = nextSpread;
+        document.getElementById('left-content').innerHTML = getLeftContent(currentSpread);
+        updateIndicator();
+        animating = false;
+      }, { once: true });
+    }
+
+    function goPrev() {
+      if (animating || currentSpread <= 0) return;
+      animating = true;
+      const prevSpread = currentSpread - 1;
+
+      const leaf = document.getElementById('flip-leaf');
+      const ff = document.getElementById('flip-front-content');
+      const fb = document.getElementById('flip-back-content');
+
+      // for backward flip: leaf starts rotated (-180) showing prev right on back
+      // front = current left content, back = prev right content
+      ff.innerHTML = getLeftContent(currentSpread);
+      fb.innerHTML = getRightContent(prevSpread);
+
+      leaf.classList.remove('hidden', 'going-next', 'going-prev');
+      // position leaf over left page, rotated -180 already
+      leaf.style.left = '0';
+      leaf.style.transformOrigin = 'right center';
+      void leaf.offsetWidth;
+      leaf.classList.add('going-prev');
+
+      document.getElementById('left-content').innerHTML = getLeftContent(prevSpread);
+
+      leaf.addEventListener('animationend', () => {
+        leaf.classList.add('hidden');
+        leaf.style.left = '50%';
+        leaf.style.transformOrigin = 'left center';
+        currentSpread = prevSpread;
+        document.getElementById('right-content').innerHTML = getRightContent(currentSpread);
+        updateIndicator();
+        animating = false;
+      }, { once: true });
+    }
+
+    /* ── Init ── */
+    document.getElementById('left-page').style.display = 'none';
+    document.getElementById('right-page').style.display = 'none';
+    document.getElementById('cover').addEventListener('click', openBook);
+    document.getElementById('btn-next').addEventListener('click', () => {
+      if (currentSpread === -1) openBook(); else goNext();
+    });
+    document.getElementById('btn-prev').addEventListener('click', goPrev);
+    document.addEventListener('keydown', e => {
+      if (e.key === 'ArrowRight' || e.key === 'ArrowDown') { if (currentSpread === -1) openBook(); else goNext(); }
+      if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') goPrev();
+    });
+    updateIndicator();
+  </script>
+</body>
+
+</html>
