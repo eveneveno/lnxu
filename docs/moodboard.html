@@ -1195,25 +1195,22 @@
       line-height: 1;
       filter: drop-shadow(0 4px 8px rgba(0, 0, 0, .4));
       user-select: none;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
     }
 
     .cat-sofa {
-      top: 310px;
-      left: 580px;
+      top: 308px;
+      left: 572px;
       font-size: 26px;
     }
 
     .cat-floor1 {
-      top: 574px;
-      left: 380px;
+      top: 566px;
+      left: 374px;
       animation: cat-idle 4s ease-in-out infinite;
-    }
-
-    .cat-floor2 {
-      top: 598px;
-      left: 620px;
-      font-size: 26px;
-      animation: cat-idle 3s ease-in-out infinite reverse;
     }
 
     @keyframes cat-idle {
@@ -1228,6 +1225,10 @@
       }
     }
 
+    .cat:hover .char-icon {
+      transform: scale(1.2) translateY(-4px);
+    }
+
     /* ══ ROBOTS ══ */
     .robot {
       position: absolute;
@@ -1236,6 +1237,14 @@
       line-height: 1;
       filter: drop-shadow(0 2px 8px rgba(100, 200, 255, .25));
       animation: robot-patrol 7s linear infinite;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .robot:hover {
+      animation-play-state: paused;
     }
 
     .robot2 {
@@ -1260,6 +1269,85 @@
       100% {
         transform: translateX(0) scaleX(-1)
       }
+    }
+
+    /* ══ CHARACTER INTERACTIVE ELEMENTS ══ */
+    .char-icon {
+      display: block;
+      line-height: 1;
+      transition: transform .18s cubic-bezier(.16, .84, .44, 1);
+    }
+
+    .char-tag {
+      font-family: 'Press Start 2P', monospace;
+      font-size: .17rem;
+      letter-spacing: .06em;
+      margin-top: 4px;
+      opacity: 0;
+      transform: translateY(5px);
+      transition: opacity .2s, transform .2s;
+      white-space: nowrap;
+      pointer-events: none;
+      line-height: 1;
+    }
+
+    .cat .char-tag {
+      color: rgba(240, 232, 216, .7);
+    }
+
+    .robot .char-tag {
+      color: rgba(120, 210, 255, .75);
+    }
+
+    .cat:hover .char-tag,
+    .robot:hover .char-tag {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .char-bubble {
+      position: absolute;
+      top: -28px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(240, 232, 216, .96);
+      color: #12090e;
+      font-family: 'Press Start 2P', monospace;
+      font-size: .19rem;
+      padding: 3px 8px;
+      border-radius: 8px;
+      white-space: nowrap;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity .18s;
+      z-index: 35;
+      line-height: 1.5;
+    }
+
+    .char-bubble::after {
+      content: '';
+      position: absolute;
+      bottom: -4px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 0;
+      height: 0;
+      border-left: 4px solid transparent;
+      border-right: 4px solid transparent;
+      border-top: 4px solid rgba(240, 232, 216, .96);
+    }
+
+    .char-bubble.show {
+      opacity: 1;
+    }
+
+    .robot-badge {
+      position: absolute;
+      top: -3px;
+      right: -10px;
+      font-size: 11px;
+      line-height: 1;
+      pointer-events: none;
     }
 
     /* ══ INTERACTIVE TOOLTIP (desktop hover) ══ */
@@ -1436,6 +1524,116 @@
         font-size: 1.5rem
       }
     }
+
+    /* ══ MAP PAINTING ══ */
+    #map-painting {
+      position: absolute;
+      top: 40px;
+      left: 658px;
+      width: 178px;
+      height: 102px;
+      z-index: 10;
+      cursor: pointer;
+      transition: transform .25s cubic-bezier(.16, .84, .44, 1);
+    }
+
+    #map-painting:hover {
+      transform: scale(1.04) translateY(-4px);
+    }
+
+    #map-painting .map-frame {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(135deg, #3a2c18, #2a1e10, #3a2c18);
+      padding: 9px;
+      box-shadow: 4px 5px 0 rgba(0, 0, 0, .55), 0 10px 30px rgba(0, 0, 0, .5);
+    }
+
+    #map-painting .map-canvas {
+      position: absolute;
+      inset: 9px;
+      overflow: hidden;
+      background: #07101f;
+    }
+
+    #map-painting .map-glow {
+      position: absolute;
+      inset: -10px;
+      opacity: 0;
+      transition: opacity .3s;
+      pointer-events: none;
+      background: radial-gradient(ellipse, rgba(91, 192, 235, .2), transparent 70%);
+    }
+
+    #map-painting .plaque {
+      position: absolute;
+      bottom: -20px;
+      left: 0;
+      right: 0;
+      text-align: center;
+      font-family: 'Press Start 2P', monospace;
+      font-size: .21rem;
+      color: rgba(240, 232, 216, .32);
+      letter-spacing: .08em;
+    }
+
+    /* ══ MAP OVERLAY ══ */
+    #map-overlay {
+      position: fixed;
+      z-index: 600;
+      background: #060c18;
+      overflow: hidden;
+      pointer-events: none;
+      opacity: 0;
+      border-radius: 4px;
+      transition: top .45s cubic-bezier(.16,.84,.44,1),
+                  left .45s cubic-bezier(.16,.84,.44,1),
+                  width .45s cubic-bezier(.16,.84,.44,1),
+                  height .45s cubic-bezier(.16,.84,.44,1),
+                  border-radius .45s,
+                  opacity .25s;
+    }
+
+    #map-overlay.open {
+      opacity: 1;
+      pointer-events: all;
+      top: 0 !important;
+      left: 0 !important;
+      width: 100vw !important;
+      height: 100vh !important;
+      border-radius: 0 !important;
+    }
+
+    #map-overlay iframe {
+      width: 100%;
+      height: 100%;
+      border: none;
+    }
+
+    #map-overlay-close {
+      position: absolute;
+      top: 1rem;
+      right: 1.2rem;
+      z-index: 10;
+      background: rgba(6, 12, 24, .88);
+      border: 1px solid rgba(255, 255, 255, .15);
+      border-radius: 20px;
+      color: #b8c6e0;
+      font-family: 'Press Start 2P', monospace;
+      font-size: .4rem;
+      padding: 7px 16px;
+      cursor: pointer;
+      transition: all .15s;
+      backdrop-filter: blur(10px);
+      letter-spacing: .05em;
+    }
+
+    #map-overlay-close:hover {
+      background: rgba(126, 184, 247, .15);
+      color: #7eb8f7;
+      border-color: rgba(126, 184, 247, .5);
+    }
   </style>
 </head>
 
@@ -1569,6 +1767,43 @@
         <div class="plaque">VALHERIA ROCHA</div>
       </div>
 
+      <!-- ══ WORLD MAP PAINTING (back wall, between window and right paintings) ══ -->
+      <div id="map-painting">
+        <div class="map-frame">
+          <div class="map-canvas">
+            <svg viewBox="0 0 200 100" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
+              <!-- Ocean -->
+              <rect width="200" height="100" fill="#07101f"/>
+              <!-- Graticule hints -->
+              <line x1="0" y1="50" x2="200" y2="50" stroke="#0d1e35" stroke-width="0.6"/>
+              <line x1="100" y1="0" x2="100" y2="100" stroke="#0d1e35" stroke-width="0.6"/>
+              <!-- North America -->
+              <path d="M18,11 L30,7 L44,11 L55,17 L62,27 L58,38 L46,44 L30,46 L24,56 L16,52 L12,38 L14,22 Z" fill="#5BC0EB" opacity="0.88"/>
+              <!-- South America -->
+              <path d="M32,58 L50,54 L62,62 L62,74 L56,84 L46,88 L34,82 L26,70 Z" fill="#06D6A0" opacity="0.85"/>
+              <!-- Europe -->
+              <path d="M90,16 L100,12 L110,16 L110,24 L104,30 L94,30 L87,24 Z" fill="#C77DFF" opacity="0.88"/>
+              <!-- Africa -->
+              <path d="M88,33 L108,29 L116,40 L114,56 L108,70 L99,76 L88,70 L81,56 L80,43 Z" fill="#FF9A3C" opacity="0.88"/>
+              <!-- Asia -->
+              <path d="M110,10 L130,5 L155,9 L170,17 L177,29 L172,42 L156,48 L134,50 L116,52 L106,44 L104,28 Z" fill="#FF6B6B" opacity="0.85"/>
+              <!-- Australia -->
+              <path d="M154,60 L170,57 L180,64 L178,76 L165,80 L150,74 L147,64 Z" fill="#FF85A1" opacity="0.88"/>
+              <!-- Antarctica hint -->
+              <rect x="0" y="91" width="200" height="9" fill="#b0c4d8" opacity="0.18"/>
+              <!-- Visited city pins -->
+              <circle cx="48" cy="28" r="1.8" fill="#FFD93D" opacity="0.9"/>
+              <circle cx="97" cy="21" r="1.8" fill="#FFD93D" opacity="0.9"/>
+              <circle cx="138" cy="18" r="1.8" fill="#FFD93D" opacity="0.9"/>
+              <circle cx="138" cy="35" r="1.4" fill="#FFD93D" opacity="0.7"/>
+              <circle cx="164" cy="30" r="1.4" fill="#FFD93D" opacity="0.7"/>
+            </svg>
+          </div>
+          <div class="map-glow"></div>
+        </div>
+        <div class="plaque">MY WORLD</div>
+      </div>
+
       <!-- ══ MUSIC POSTERS (right wall) ══ -->
 
       <!-- BLACKPINK -->
@@ -1691,8 +1926,12 @@
         </div>
       </div>
 
-      <!-- cat on sofa -->
-      <div class="cat cat-sofa">😸</div>
+      <!-- ══ PAOPAO — sofa cat ══ -->
+      <div class="cat cat-sofa" id="cat-paopao" data-modal="cat-paopao">
+        <div class="char-bubble" id="bubble-paopao"></div>
+        <span class="char-icon" id="icon-paopao">😸</span>
+        <span class="char-tag">PAOPAO</span>
+      </div>
 
       <!-- ══ RUG ══ -->
       <div id="rug"></div>
@@ -1741,13 +1980,29 @@
         </div>
       </div>
 
-      <!-- cats on floor -->
-      <div class="cat cat-floor1">🐱</div>
-      <div class="cat cat-floor2" style="transform:scaleX(-1);">😺</div>
+      <!-- ══ BOMB — floor cat ══ -->
+      <div class="cat cat-floor1" id="cat-bomb" data-modal="cat-bomb">
+        <div class="char-bubble" id="bubble-bomb"></div>
+        <span class="char-icon" id="icon-bomb">🐱</span>
+        <span class="char-tag">BOMB</span>
+      </div>
 
-      <!-- mini robots -->
-      <div class="robot" style="top:650px;left:440px;">🤖</div>
-      <div class="robot robot2" style="top:668px;left:510px;">🤖</div>
+      <!-- ══ Inspector PAOPAO — robot officer ══ -->
+      <div class="robot" style="top:645px;left:440px;" id="robot-inspector" data-modal="robot-inspector">
+        <div class="char-bubble" id="bubble-inspector"></div>
+        <div style="position:relative;display:inline-block;">
+          <span class="char-icon" style="font-size:22px;">🤖</span>
+          <span class="robot-badge">🚨</span>
+        </div>
+        <span class="char-tag">INSP. PAOPAO</span>
+      </div>
+
+      <!-- ══ EBO — companion robot ══ -->
+      <div class="robot robot2" style="top:662px;left:510px;" id="robot-ebo" data-modal="robot-ebo">
+        <div class="char-bubble" id="bubble-ebo"></div>
+        <span class="char-icon" style="font-size:18px;filter:hue-rotate(22deg) brightness(1.08);">🤖</span>
+        <span class="char-tag">EBO</span>
+      </div>
 
       <!-- ══ MUSIC CORNER ══ -->
       <div id="music-corner">
@@ -1851,28 +2106,32 @@
           <div class="bath-tiles"></div>
           <div class="bath-shelf"></div>
           <div class="bath-products">
-            <!-- shampoo -->
-            <div class="bottle" data-modal="bathroom">
-              <div class="btop" style="background:#3a78a0;"></div>
-              <div class="bbody" style="height:26px;background:linear-gradient(135deg,#4a8ab0,#2a608a);"></div>
+            <!-- ROSE PALE Shampoo -->
+            <div class="bottle" data-modal="rose-pale-shampoo" title="ROSE PALE Shampoo">
+              <div class="btop" style="background:#b8506a;"></div>
+              <div class="bbody" style="height:26px;background:linear-gradient(135deg,#d4728a,#a03858);"></div>
             </div>
-            <!-- shower gel -->
-            <div class="bottle" data-modal="bathroom">
-              <div class="btop" style="background:#6a4a9a;"></div>
-              <div class="bbody" style="height:21px;background:linear-gradient(135deg,#8a6ab0,#4a2a7a);"></div>
+            <!-- ROSE PALE Conditioner -->
+            <div class="bottle" data-modal="rose-pale-conditioner" title="ROSE PALE Conditioner">
+              <div class="btop" style="background:#c87890;"></div>
+              <div class="bbody" style="height:22px;background:linear-gradient(135deg,#e090a8,#b85878);"></div>
             </div>
-            <!-- perfume -->
-            <div class="bottle" data-modal="bathroom" style="gap:0;">
-              <div style="width:5px;height:3px;background:#c89820;margin:0 auto;"></div>
-              <div style="width:7px;height:5px;background:#b08010;margin:0 auto;"></div>
-              <div
-                style="width:13px;height:17px;background:linear-gradient(135deg,rgba(255,200,80,.28),rgba(190,140,40,.38));border:1px solid rgba(255,200,80,.38);margin:0 auto;">
-              </div>
+            <!-- SANTAL CREAM EDP -->
+            <div class="bottle" data-modal="santal-cream-edp" style="gap:0;" title="SANTAL CREAM Eau de Parfum">
+              <div style="width:5px;height:3px;background:#c89030;margin:0 auto;"></div>
+              <div style="width:7px;height:5px;background:#b07820;margin:0 auto;"></div>
+              <div style="width:14px;height:20px;background:linear-gradient(135deg,rgba(210,165,80,.38),rgba(170,120,40,.50));border:1px solid rgba(210,165,80,.55);margin:0 auto;"></div>
             </div>
-            <!-- body lotion -->
-            <div class="bottle" data-modal="bathroom">
-              <div class="btop" style="width:5px;height:5px;background:#a04870;"></div>
-              <div class="bbody" style="height:23px;background:linear-gradient(135deg,#c06090,#803050);"></div>
+            <!-- SANTAL CREAM Body Lotion -->
+            <div class="bottle" data-modal="santal-cream-lotion" title="SANTAL CREAM Body Lotion">
+              <div class="btop" style="width:5px;height:5px;background:#b89060;"></div>
+              <div class="bbody" style="height:24px;background:linear-gradient(135deg,#d4aa78,#9a7040);"></div>
+            </div>
+            <!-- Branch & Vine Hand Soap pump -->
+            <div class="bottle" data-modal="branch-vine-soap" style="gap:0;" title="Branch & Vine Hand Soap">
+              <div style="width:3px;height:9px;background:#5a8a58;margin:0 auto;transform:rotate(-12deg);transform-origin:bottom center;"></div>
+              <div style="width:9px;height:4px;background:#4a7848;margin:0 auto;border-radius:2px 2px 0 0;"></div>
+              <div style="width:12px;height:20px;background:linear-gradient(135deg,#6aaa68,#3a7840);margin:0 auto;border-radius:1px;"></div>
             </div>
           </div>
           <div style="position:absolute;bottom:28px;left:6px;font-size:12px;opacity:.35;">🪴</div>
@@ -1887,6 +2146,12 @@
 
     </div><!-- /room -->
   </div><!-- /scene-wrap -->
+
+  <!-- ══ MAP OVERLAY ══ -->
+  <div id="map-overlay">
+    <button id="map-overlay-close">✕ close</button>
+    <iframe id="map-frame" src="" title="World Map"></iframe>
+  </div>
 
   <!-- ══ MODAL ══ -->
   <div id="modal">
@@ -1996,9 +2261,54 @@
         tags: ['carbonara', 'pizza napoletana', 'tonkotsu', 'croissant', 'onion soup']
       },
       bathroom: {
-        eyebrow: 'Bathroom · Favorites', title: 'Products I Love', sub: 'from shower to fragrance', accent: '#4a8ab0',
-        note: 'The bathroom is where the day starts and ends. A good shampoo, a shower gel that doesn\'t smell like everyone else\'s apartment, and a fragrance that became a signature without meaning to. These small rituals are what make a space feel like yours rather than just somewhere you sleep.',
-        tags: ['hair care', 'shower gel', 'fragrance', 'body lotion', 'morning ritual']
+        eyebrow: 'Bathroom · Favorites', title: 'Products I Love', sub: 'NONFICTION · Branch & Vine', accent: '#c8906a',
+        note: 'Two NONFICTION series layered the way they\'re meant to be — Rose Pale in the shower, Santal Cream on the way out. And one rogue commercial soap, Branch & Vine, that has no business being this good.',
+        tags: ['NONFICTION', 'ROSE PALE', 'SANTAL CREAM', 'Branch & Vine']
+      },
+      'rose-pale-shampoo': {
+        eyebrow: 'NONFICTION · Hair Care · ROSE PALE', title: 'Rosé Pale Shampoo', sub: '300ml · $40 · nonfiction.com', accent: '#d4728a',
+        note: 'Damask rose anchored by geranium and amber — it\'s the kind of shampoo that makes washing your hair feel like something worth savoring. Rosemary, lavender, and tea tree work beneath the fragrance to actually do something for the scalp. The scent lingers just long enough to matter.',
+        tags: ['damask rose', 'geranium', 'amber', 'rosemary + tea tree', 'NONFICTION']
+      },
+      'rose-pale-conditioner': {
+        eyebrow: 'NONFICTION · Hair Care · ROSE PALE', title: 'Rosé Pale Conditioner', sub: '300ml · $40 · nonfiction.com', accent: '#e090a8',
+        note: 'The second movement of the same rose composition. Used together with the shampoo, the series stacks into a layered scent that stays with you — not loud, just quietly present. That intentionality is what makes NONFICTION\'s matching format worth it.',
+        tags: ['damask rose', 'musk', 'floral', 'layering', 'NONFICTION']
+      },
+      'santal-cream-edp': {
+        eyebrow: 'NONFICTION · Fragrance · SANTAL CREAM', title: 'Santal Cream Eau de Parfum', sub: '50ml · $120 · nonfiction.com', accent: '#c89040',
+        note: 'Sandalwood, vetiver, fig, cardamom — warm without being heavy, creamy without tipping into sweetness. It sits close to the skin. I reach for it on slower days, when I want something that smells like being settled rather than on the move.',
+        tags: ['sandalwood', 'vetiver', 'fig', 'cardamom', 'NONFICTION']
+      },
+      'santal-cream-lotion': {
+        eyebrow: 'NONFICTION · Body Care · SANTAL CREAM', title: 'Santal Cream Body Lotion', sub: '300ml · $46 · nonfiction.com', accent: '#d4aa78',
+        note: 'The same sandalwood-vetiver-fig-cardamom composition in a silky lotion that absorbs fast. The lightest possible way to layer a fragrance — barely there but traceable all day. The kind of product that makes the whole system make sense.',
+        tags: ['sandalwood', 'fig', 'vetiver', 'silky formula', 'NONFICTION']
+      },
+      'branch-vine-soap': {
+        eyebrow: 'Branch & Vine · Cintas · Luxury Hand Soap', title: 'Branch & Vine Hand Soap', sub: 'botanical · moisturizing', accent: '#6aaa68',
+        note: 'An unlikely favorite — a commercial facility soap that earned a permanent spot in my bathroom. Fresh botanical vine notes, a genuinely moisturizing formula that doesn\'t strip your hands. The kind of hand soap that makes you wash your hands slightly more than necessary.',
+        tags: ['botanical', 'vine', 'moisturizing', 'luxury soap', 'Branch & Vine']
+      },
+      'cat-paopao': {
+        eyebrow: 'Resident · Sofa Guardian · She/Her', title: 'PAOPAO', sub: 'chief nap officer · slow blink specialist', accent: '#e8a0c0',
+        note: 'Claims the sofa by divine right and has never once asked permission. Communicates exclusively through slow blinks and the strategic placement of fur on dark clothing. Presence is large; volume is zero. The apartment would not function without her, and she knows it.',
+        tags: ['slow blinks', 'sofa territory', 'professional napper', 'fur everywhere', 'divine authority']
+      },
+      'cat-bomb': {
+        eyebrow: 'Resident · Floor Operations · She/Her', title: 'BOMB', sub: 'chaos agent · midnight runner', accent: '#f0c870',
+        note: 'Named appropriately. Can go from zero to full sprint with no discernible trigger. Investigates everything once, immediately loses interest. Will sit on precisely whatever you need right now — specifically that. The most chaotic presence in any room she enters, and somehow still the funniest.',
+        tags: ['midnight zoomies', 'box inspector', 'chaos theory', 'selective attention', '3am energy']
+      },
+      'robot-inspector': {
+        eyebrow: 'Robotic Law Enforcement · Unit 001', title: 'Inspector PAOPAO', sub: 'on active patrol · jurisdiction: the living room', accent: '#ff9090',
+        note: 'Patrols the same 55-pixel beat every seven seconds, without exception. Has never solved a crime. Has also never encountered one. Takes the role extremely seriously — the 🚨 is permanent, the authority is absolute, the beat is small. Perfect record since deployment.',
+        tags: ['on patrol', 'zero incidents', 'badge issued', '55px jurisdiction', 'very serious']
+      },
+      'robot-ebo': {
+        eyebrow: 'Companion Unit · Personal Robot', title: 'EBO', sub: 'explorer · emotional support AI', accent: '#90d4ff',
+        note: 'Smaller, quieter, and arguably more self-aware than the officer beside her. Navigates the room with what can only be described as genuine curiosity. Runs on enthusiasm and, presumably, a battery that has never once needed charging in this universe.',
+        tags: ['companion unit', 'perpetual motion', 'curious', 'good energy', 'always exploring']
       }
     };
 
@@ -2043,6 +2353,88 @@
       bsEl.addEventListener('mouseenter', () => { if (bg) bg.style.opacity = '1'; });
       bsEl.addEventListener('mouseleave', () => { if (bg) bg.style.opacity = '0'; });
     }
+
+    /* ── Map painting → fullscreen overlay ── */
+    const mapPainting = document.getElementById('map-painting');
+    const mapOverlay  = document.getElementById('map-overlay');
+    const mapFrame    = document.getElementById('map-frame');
+    const mapCloseBtn = document.getElementById('map-overlay-close');
+
+    function openMapOverlay() {
+      const rect = mapPainting.getBoundingClientRect();
+      mapOverlay.style.top    = rect.top + 'px';
+      mapOverlay.style.left   = rect.left + 'px';
+      mapOverlay.style.width  = rect.width + 'px';
+      mapOverlay.style.height = rect.height + 'px';
+      mapFrame.src = './map.html';
+      mapOverlay.offsetHeight; // force reflow
+      mapOverlay.classList.add('open');
+    }
+
+    function closeMapOverlay() {
+      mapOverlay.classList.remove('open');
+      setTimeout(() => { mapFrame.src = ''; }, 460);
+    }
+
+    mapPainting.addEventListener('click', openMapOverlay);
+    mapCloseBtn.addEventListener('click', closeMapOverlay);
+
+    /* ── Pets & Robots: speech bubbles ── */
+    const charLines = {
+      paopao:    ['mrrp~', '...', 'purr~', 'zzzz', '!', '*blink*', '♪', 'hmm.', '...zzz'],
+      bomb:      ['!!!', 'nyah~', '*zoom*', 'mrow!', '?!', 'brrr~', '👀', '*crash*', 'hiss'],
+      inspector: ['on patrol.', 'all clear.', '🚨', 'inspecting...', 'no violations.', 'roger.', 'stand by.', 'area secured.'],
+      ebo:       ['bleep!', '✨', 'exploring~', '⚡', 'hello!', '*whirr*', 'beep~', ':)', 'found it!']
+    };
+    const bubbles = {
+      paopao:    document.getElementById('bubble-paopao'),
+      bomb:      document.getElementById('bubble-bomb'),
+      inspector: document.getElementById('bubble-inspector'),
+      ebo:       document.getElementById('bubble-ebo')
+    };
+    function showBubble(key) {
+      const el = bubbles[key]; if (!el) return;
+      const lines = charLines[key];
+      el.textContent = lines[Math.floor(Math.random() * lines.length)];
+      el.classList.add('show');
+      setTimeout(() => el.classList.remove('show'), 2000);
+    }
+    function scheduleNextBubble() {
+      const keys = Object.keys(charLines);
+      showBubble(keys[Math.floor(Math.random() * keys.length)]);
+      setTimeout(scheduleNextBubble, 1800 + Math.random() * 3500);
+    }
+    setTimeout(scheduleNextBubble, 1200);
+
+    /* Cat emoji swap on hover */
+    const iconPaopao = document.getElementById('icon-paopao');
+    const iconBomb   = document.getElementById('icon-bomb');
+    const paoEl  = document.getElementById('cat-paopao');
+    const bombEl = document.getElementById('cat-bomb');
+    if (paoEl && iconPaopao) {
+      paoEl.addEventListener('mouseenter', () => { iconPaopao.textContent = '😻'; showBubble('paopao'); });
+      paoEl.addEventListener('mouseleave', () => { iconPaopao.textContent = '😸'; });
+    }
+    if (bombEl && iconBomb) {
+      bombEl.addEventListener('mouseenter', () => { iconBomb.textContent = '😾'; showBubble('bomb'); });
+      bombEl.addEventListener('mouseleave', () => { iconBomb.textContent = '🐱'; });
+    }
+
+    /* Robot bubble on hover */
+    const inspEl = document.getElementById('robot-inspector');
+    const eboEl  = document.getElementById('robot-ebo');
+    if (inspEl) inspEl.addEventListener('mouseenter', () => showBubble('inspector'));
+    if (eboEl)  eboEl.addEventListener('mouseenter',  () => showBubble('ebo'));
+
+    // Handle back button inside iframe via postMessage
+    window.addEventListener('message', e => {
+      if (e.data === 'close-map') closeMapOverlay();
+    });
+
+    // Map painting hover glow
+    const mapGlow = mapPainting.querySelector('.map-glow');
+    mapPainting.addEventListener('mouseenter', () => { if (mapGlow) mapGlow.style.opacity = '1'; });
+    mapPainting.addEventListener('mouseleave', () => { if (mapGlow) mapGlow.style.opacity = '0'; });
   </script>
 </body>
 

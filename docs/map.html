@@ -423,6 +423,17 @@
         visitedIds.size + cityMarkers.filter(c => c.flag === "🇭🇰").length;
     });
 
+    // ── Back button: close overlay when embedded in moodboard ────
+    if (window.self !== window.top) {
+      const backBtn = document.querySelector('.back-btn');
+      if (backBtn) {
+        backBtn.addEventListener('click', e => {
+          e.preventDefault();
+          window.parent.postMessage('close-map', '*');
+        });
+      }
+    }
+
     // ── Resize ────────────────────────────────────────────────────
     window.addEventListener("resize", () => {
       W = window.innerWidth; H = window.innerHeight;
