@@ -981,6 +981,12 @@
 			--mono: 'JetBrains Mono', 'Courier New', monospace;
 		}
 
+		html,
+		body {
+			max-width: 100%;
+			overflow-x: hidden;
+		}
+
 		body {
 			background: #10131a !important;
 			color: #f3f6fa;
@@ -1064,6 +1070,89 @@
 
 		.about.svelte-1n6ip51 li.svelte-1n6ip51 a.svelte-1n6ip51:hover {
 			color: #7eb8f7;
+		}
+
+		@media only screen and (max-width: 959px) {
+			header[style*="padding: 3.5rem 1.5rem 2.5rem"] {
+				padding: 2.75rem 1rem 2rem !important;
+				gap: 1rem !important;
+			}
+
+			header img {
+				width: 112px !important;
+				height: 112px !important;
+			}
+
+			header h1 {
+				font-size: 1.7rem !important;
+				line-height: 1.05 !important;
+			}
+
+			header>div>p:first-of-type {
+				font-size: 0.82rem !important;
+				line-height: 1.6 !important;
+			}
+
+			header>div>p:nth-of-type(2) {
+				font-size: 0.92rem !important;
+				line-height: 1.75 !important;
+				padding-inline: 0.2rem;
+			}
+
+			#filter-bar {
+				padding: 0.25rem 1rem 1.25rem !important;
+				gap: 0.45rem !important;
+			}
+
+			.filter-btn {
+				padding: 0.55rem 0.85rem;
+				font-size: 0.76rem;
+			}
+
+			.reviewer.svelte-1n6ip51,
+			.about.svelte-1n6ip51 {
+				width: 100% !important;
+			}
+
+			.inner.svelte-1n6ip51 {
+				flex-direction: column !important;
+				align-items: stretch !important;
+			}
+		}
+
+		@media only screen and (max-width: 599px) {
+			li.svelte-lc01k1 {
+				padding: 20px 10px !important;
+			}
+
+			.story.svelte-1fhvhfr .info.svelte-1fhvhfr {
+				gap: 0.5rem;
+				align-items: flex-start;
+			}
+
+			.info.svelte-1fhvhfr p:where(.svelte-1fhvhfr) {
+				font-size: 0.72rem;
+			}
+
+			h3.short.svelte-1fhvhfr {
+				font-size: 1.35rem;
+				line-height: 1.05;
+			}
+
+			p.tease.svelte-1fhvhfr {
+				font-size: 0.92rem;
+				line-height: 1.55;
+			}
+
+			.filter-btn {
+				flex: 1 1 calc(50% - 0.45rem);
+				min-width: 0;
+				text-align: center;
+			}
+
+			.skip-to-main {
+				left: 0.75rem !important;
+			}
 		}
 	</style>
 </body>

@@ -121,6 +121,61 @@
     }
     .legend-row { display: flex; align-items: center; gap: 7px; }
     .legend-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+
+    @media (max-width: 720px) {
+      .back-btn {
+        top: 0.85rem;
+        left: 0.85rem;
+        padding: 7px 12px;
+        font-size: 0.72rem;
+      }
+
+      .page-header {
+        top: 4rem;
+        width: calc(100vw - 2rem);
+        white-space: normal;
+      }
+
+      .page-header h1 {
+        font-size: 1rem;
+      }
+
+      .page-header .sub {
+        font-size: 0.66rem;
+      }
+
+      .stats-badge {
+        bottom: 0.9rem;
+        width: calc(100vw - 5.5rem);
+        padding: 9px 14px;
+        font-size: 0.67rem;
+        white-space: normal;
+        line-height: 1.55;
+        text-align: center;
+      }
+
+      .stats-badge .dim {
+        display: block;
+        margin: 0.25rem 0 0;
+      }
+
+      .legend {
+        left: 0.85rem;
+        bottom: 4.9rem;
+        font-size: 0.62rem;
+        gap: 4px;
+      }
+
+      .zoom-controls {
+        right: 0.85rem;
+        bottom: 1rem;
+      }
+
+      #tooltip {
+        max-width: min(78vw, 300px);
+        white-space: normal;
+      }
+    }
   </style>
 </head>
 <body>

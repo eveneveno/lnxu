@@ -279,6 +279,51 @@
       .post-item { grid-template-columns: 56px 1fr; gap: 0 1rem; }
       .post-reader { padding: 2rem 1.5rem; margin: 1rem auto; }
     }
+
+    @media (max-width: 720px) {
+      nav {
+        padding: 0.9rem 1rem;
+        gap: 0.6rem;
+        flex-wrap: wrap;
+        justify-content: center;
+      }
+
+      .nav-title, .nav-right {
+        width: 100%;
+        text-align: center;
+      }
+
+      .page-header {
+        padding: 7rem 1rem 2.75rem;
+      }
+
+      .tag-filter,
+      .post-list,
+      footer {
+        padding-left: 1rem;
+        padding-right: 1rem;
+      }
+
+      .post-item {
+        grid-template-columns: 1fr;
+        gap: 0.6rem;
+      }
+
+      .post-date {
+        text-align: left;
+        display: flex;
+        align-items: center;
+        gap: 0.55rem;
+      }
+
+      .post-date .dot {
+        margin: 0;
+      }
+
+      .post-overlay {
+        padding: 1rem 0.75rem;
+      }
+    }
   </style>
 </head>
 <body>
